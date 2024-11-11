@@ -1,3 +1,9 @@
+pub mod gnupg;
+pub mod utils;
+pub mod process;
+
+
 fn main() {
-    println!("Hello, world!");
+    let gpg = gnupg::GPG::new().unwrap();
+    println!("{:?}", gpg);
 }
