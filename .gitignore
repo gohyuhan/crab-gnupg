@@ -1,0 +1,6 @@
+# Ignore build artifacts
+/target/
+
+# Ignore operating system-specific files
+.DS_Store      # macOS
+Thumbs.db      # Windows
