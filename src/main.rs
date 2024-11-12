@@ -1,9 +1,13 @@
 pub mod gnupg;
-pub mod utils;
 pub mod process;
-
+pub mod utils;
 
 fn main() {
-    let gpg = gnupg::GPG::new().unwrap();
+    let gpg = match gnupg::GPG::new() {
+        Ok(gpg) => gpg,
+        Err(_) => {
+            return;
+        }
+    };
     println!("{:?}", gpg);
 }
