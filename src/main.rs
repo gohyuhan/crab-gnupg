@@ -1,3 +1,5 @@
+use std::env;
+
 pub mod gnupg;
 pub mod process;
 pub mod utils;
@@ -9,5 +11,6 @@ fn main() {
             return;
         }
     };
+    println!("{:?}", utils::utils::get_system_encoding().unwrap());
     println!("{:?}", gpg);
 }

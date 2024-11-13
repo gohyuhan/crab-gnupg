@@ -1,13 +1,16 @@
 use std::{
     collections::HashMap,
+    fs::File,
     io::{Error, Read},
     process::{Child, ChildStderr, ChildStdin, ChildStdout, Command, ExitStatus, Stdio},
     sync::{Arc, Mutex},
     thread::{self, JoinHandle},
 };
 
-use crate::utils::errors::GPGError;
 use crate::utils::response::CmdResult;
+use crate::utils::{errors::GPGError, utils::get_system_encoding};
+
+const BUFFER: [u8; 32] = [0; 32];
 
 /// generate a list of arguments to be passed to gpg process
 fn generate_cmd_args(
@@ -129,7 +132,7 @@ fn read_cmd_response(mut stdout: ChildStdout, result: Arc<Mutex<&mut CmdResult>>
     let mut output_lines: Vec<String> = Vec::new();
     loop {
         let mut buffer = [0; 32];
-        let line = stdout.read(&mut buffer);
+        let line = stdout.read(&mut BUFFER);
         match line {
             Ok(n) => {
                 if n <= 0 {
@@ -144,6 +147,7 @@ fn read_cmd_response(mut stdout: ChildStdout, result: Arc<Mutex<&mut CmdResult>>
         output_lines.push(line_string.to_string());
     }
     result.lock().unwrap().set_raw_data(output_lines.join(""));
+    println!("output_lines: \n {}", output_lines.join(""));
     drop(stdout);
 }
 
@@ -187,11 +191,12 @@ fn read_cmd_error(mut stderr: ChildStderr, result: Arc<Mutex<&mut CmdResult>>) {
         error_lines.push(error_line_string.to_string());
     }
     result.lock().unwrap().set_raw_data(error_lines.join(""));
+    println!("error_lines: \n {}", error_lines.join(""));
     drop(stderr);
 }
 
 /// start writing process
-fn start_writing_process() -> Result<JoinHandle<()>, GPGError> {
+fn start_writing_process(file: File, stdin: ChildStdin) -> Result<JoinHandle<()>, GPGError> {
     // TODO: implement write to stdin
 
     return Err(GPGError::WriterFailError(
@@ -200,6 +205,6 @@ fn start_writing_process() -> Result<JoinHandle<()>, GPGError> {
 }
 
 /// write to stdin
-fn write_to_stdin() {
+fn write_to_stdin(file: File, stdin: ChildStdin) {
     // TODO: implement write to stdin
 }
