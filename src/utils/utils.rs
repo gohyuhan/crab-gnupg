@@ -117,7 +117,7 @@ pub fn get_system_encoding() -> Option<&'static Encoding> {
 
 #[cfg(windows)]
 fn check_encoding_on_window_system() -> u32 {
-    use winapi::um::wincon::GetACP;
+    use winapi::um::consoleapi::GetConsoleCP;
 
     unsafe {
         return GetACP();
