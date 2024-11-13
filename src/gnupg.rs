@@ -5,10 +5,13 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use crate::{process::{collect_cmd_output_response, start_process}, utils::utils::get_gpg_version};
 use crate::utils::errors::GPGError;
 use crate::utils::response::{CmdResult, Operation};
 use crate::utils::utils::{check_is_dir, get_or_create_gpg_homedir, get_or_create_gpg_output_dir};
+use crate::{
+    process::{collect_cmd_output_response, start_process},
+    utils::utils::get_gpg_version,
+};
 
 /// a struct to represent a GPG object
 #[derive(Debug)]
@@ -68,7 +71,7 @@ impl GPG {
         let share_result: Arc<Mutex<&mut CmdResult>> = Arc::new(Mutex::new(&mut result));
         collect_cmd_output_response(cmd_process, share_result, None, Some(child_stdin));
 
-        let version:(f32, String) = get_gpg_version(result);
+        let version: (f32, String) = get_gpg_version(result);
 
         return Ok(GPG {
             homedir: homedir,
@@ -128,8 +131,7 @@ impl GPG {
         let share_result: Arc<Mutex<&mut CmdResult>> = Arc::new(Mutex::new(&mut result));
         collect_cmd_output_response(cmd_process, share_result, None, Some(child_stdin));
 
-        let version:(f32, String) = get_gpg_version(result);
-
+        let version: (f32, String) = get_gpg_version(result);
         return Ok(GPG {
             homedir: homedir,
             output_dir: output_dir,

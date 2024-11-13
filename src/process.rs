@@ -6,6 +6,7 @@ use std::{
     thread::{self, JoinHandle},
 };
 
+use crate::utils::errors::GPGError;
 use crate::utils::response::CmdResult;
 
 /// generate a list of arguments to be passed to gpg process
@@ -123,6 +124,7 @@ pub fn collect_cmd_output_response(
     result.lock().unwrap().set_return_code(exit_code);
 }
 
+/// read output from stdout
 fn read_cmd_response(mut stdout: ChildStdout, result: Arc<Mutex<&mut CmdResult>>) {
     let mut output_lines: Vec<String> = Vec::new();
     loop {
@@ -163,23 +165,22 @@ fn read_cmd_error(mut stderr: ChildStderr, result: Arc<Mutex<&mut CmdResult>>) {
         }
         let error_line_string = String::from_utf8_lossy(&buffer);
         if error_line_string.len() >= 9 {
-             if &error_line_string[0..9] == "[GNUPG:] " {
+            if &error_line_string[0..9] == "[GNUPG:] " {
                 // Split into at most 2 parts based on whitespace
                 let parts = &error_line_string[9..].splitn(2, char::is_whitespace);
 
                 let mut p = parts.clone();
                 let keyword: String = p.next().unwrap_or("").to_string(); // First part, default to empty string if no part
                 let value: String = p.next().unwrap_or("").to_string(); // Second part, default to empty string if no part
-                
+
                 result.lock().unwrap().handle_status(keyword, value);
-            }
-            else if &error_line_string[0..5] == "gpg: "{
+            } else if &error_line_string[0..5] == "gpg: " {
                 let parts = &error_line_string[5..].splitn(2, ": ");
-                
+
                 let mut p = parts.clone();
                 let keyword: String = p.next().unwrap_or("").to_string(); // First part, default to empty string if no part
                 let value: String = p.next().unwrap_or("").to_string(); // Second part, default to empty string if no part
-                
+
                 result.lock().unwrap().handle_status(keyword, value);
             }
         }
@@ -187,4 +188,18 @@ fn read_cmd_error(mut stderr: ChildStderr, result: Arc<Mutex<&mut CmdResult>>) {
     }
     result.lock().unwrap().set_raw_data(error_lines.join(""));
     drop(stderr);
+}
+
+/// start writing process
+fn start_writing_process() -> Result<JoinHandle<()>, GPGError> {
+    // TODO: implement write to stdin
+
+    return Err(GPGError::WriterFailError(
+        "Fail to start writing process".to_string(),
+    ));
+}
+
+/// write to stdin
+fn write_to_stdin() {
+    // TODO: implement write to stdin
 }
