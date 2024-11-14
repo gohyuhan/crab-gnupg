@@ -7,7 +7,9 @@ pub enum GPGError {
     GPGNotFoundError(String),
     FailedToStartProcess(String),
     FailedToRetrieveChildProcess(String),
-    WriterFailError(String),
+    WriteFailError(String),
+    ReadFailError(String),
+    PassphraseError(String),
 }
 
 impl Display for GPGError {
@@ -20,7 +22,9 @@ impl Display for GPGError {
             GPGError::FailedToRetrieveChildProcess(err) => {
                 write!(f, "[FailedToRetrieveChildProcess] {}", err)
             }
-            GPGError::WriterFailError(err) => write!(f, "[WriterFailError] {}", err),
+            GPGError::WriteFailError(err) => write!(f, "[WriteFailError] {}", err),
+            GPGError::ReadFailError(err) => write!(f, "[ReadFailError] {}", err),
+            GPGError::PassphraseError(err) => write!(f, "[PassphraseError] {}", err),
         }
     }
 }

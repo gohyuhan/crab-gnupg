@@ -1,13 +1,7 @@
-#[cfg(windows)]
-extern crate winapi;
-
-use std::env;
 use std::fs::{metadata, set_permissions};
 use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 
-use codepage::to_encoding;
-use encoding_rs::Encoding;
 use regex::Regex;
 
 use super::response::CmdResult;
@@ -88,38 +82,4 @@ pub fn get_gpg_version(result: CmdResult) -> (f32, String) {
     // should take into account also that the version
     // might not be in the same format for every version
     return (0.0, "0.0.0".to_string());
-}
-
-/// determine encoding of system
-pub fn get_system_encoding() -> Option<&'static Encoding> {
-    #[cfg(not(windows))]
-    {
-        let encoding: Option<String> = env::var("LANG").or_else(|_| env::var("LC_CTYPE")).ok();
-
-        let encoding_rs: Option<&Encoding> = encoding
-            .as_deref()
-            .and_then(|e| Encoding::for_label(e.as_bytes()));
-
-        match encoding_rs {
-            Some(enc) => println!("Found encoding: {:?}", enc),
-            None => println!("No supported encoding found."),
-        }
-        return encoding_rs;
-    }
-
-    #[cfg(windows)]
-    if cfg!(windows) {
-        let encoding_code: u16 = check_encoding_on_window_system();
-        let encoding: Option<&Encoding> = to_encoding(encoding_code as u16);
-        return encoding;
-    }
-}
-
-#[cfg(windows)]
-fn check_encoding_on_window_system() -> u32 {
-    use winapi::um::consoleapi::GetConsoleCP;
-
-    unsafe {
-        return GetACP();
-    }
 }

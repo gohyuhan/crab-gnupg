@@ -1,16 +1,14 @@
 use std::{
     collections::HashMap,
     fs::File,
-    io::{Error, Read},
+    io::{Error, Read, Write},
     process::{Child, ChildStderr, ChildStdin, ChildStdout, Command, ExitStatus, Stdio},
     sync::{Arc, Mutex},
     thread::{self, JoinHandle},
 };
 
+use crate::utils::errors::GPGError;
 use crate::utils::response::CmdResult;
-use crate::utils::{errors::GPGError, utils::get_system_encoding};
-
-const BUFFER: [u8; 32] = [0; 32];
 
 /// generate a list of arguments to be passed to gpg process
 fn generate_cmd_args(
@@ -132,7 +130,7 @@ fn read_cmd_response(mut stdout: ChildStdout, result: Arc<Mutex<&mut CmdResult>>
     let mut output_lines: Vec<String> = Vec::new();
     loop {
         let mut buffer = [0; 32];
-        let line = stdout.read(&mut BUFFER);
+        let line: Result<usize, Error> = stdout.read(&mut buffer);
         match line {
             Ok(n) => {
                 if n <= 0 {
@@ -196,15 +194,57 @@ fn read_cmd_error(mut stderr: ChildStderr, result: Arc<Mutex<&mut CmdResult>>) {
 }
 
 /// start writing process
-fn start_writing_process(file: File, stdin: ChildStdin) -> Result<JoinHandle<()>, GPGError> {
+fn start_writing_process(file: File, stdin: ChildStdin) -> JoinHandle<()> {
     // TODO: implement write to stdin
-
-    return Err(GPGError::WriterFailError(
-        "Fail to start writing process".to_string(),
-    ));
+    let write_process: JoinHandle<()> = thread::spawn(move || {
+        let _ = write_to_stdin(file, stdin);
+    });
+    return write_process;
 }
 
-/// write to stdin
-fn write_to_stdin(file: File, stdin: ChildStdin) {
+// write to stdin
+fn write_to_stdin(mut file: File, mut stdin: ChildStdin) -> Result<(), GPGError> {
     // TODO: implement write to stdin
+    loop {
+        let mut buffer: [u8; 32] = [0; 32];
+        let data: Result<usize, Error> = file.read(&mut buffer);
+        match data {
+            Ok(n) => {
+                if n <= 0 {
+                    break;
+                }
+            }
+            Err(e) => {
+                return Err(GPGError::ReadFailError(e.to_string()));
+            }
+        }
+        let r: Result<(), Error> = stdin.write_all(&buffer[..data.unwrap()]);
+        match r {
+            Ok(_) => {
+                continue;
+            }
+            Err(e) => {
+                return Err(GPGError::WriteFailError(e.to_string()));
+            }
+        }
+    }
+
+    drop(stdin);
+
+    return Ok(());
+}
+
+fn write_passphrase(passphrase: String, stdin: &mut ChildStdin) -> Result<(), GPGError> {
+    let r: Result<(), Error> = stdin.write_all(passphrase.as_bytes());
+    match r {
+        Ok(_) => {
+            let _ = stdin.write_all(b"\n");
+            return Ok(());
+        }
+        Err(e) => {
+            return Err(GPGError::PassphraseError(
+                "Failed to enter passphrase".to_string(),
+            ))
+        }
+    }
 }
