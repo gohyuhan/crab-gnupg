@@ -63,16 +63,3 @@ impl Display for Operation {
         }
     }
 }
-
-#[derive(Debug)]
-pub enum ResultError {
-    NotFoundError,
-}
-
-impl Display for ResultError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ResultError::NotFoundError => write!(f, "Not Found"),
-        }
-    }
-}

@@ -27,6 +27,8 @@ pub fn handle_cmd_io(
     ops: Operation,
 ) -> Result<CmdResult, GPGError> {
     let mut p = String::from("");
+    let mut write_thread: Option<JoinHandle<()>> = None;
+
     if passphrase.is_some() {
         p = passphrase.unwrap().clone();
     }
@@ -47,7 +49,6 @@ pub fn handle_cmd_io(
     if p != String::from("") {
         let _ = write_passphrase(p, &mut stdin);
     }
-    let mut write_thread: Option<JoinHandle<()>> = None;
     if write {
         let file: Result<File, GPGError> = get_file_obj(file, file_path);
         match file {
@@ -296,7 +297,7 @@ fn write_passphrase(passphrase: String, stdin: &mut ChildStdin) -> Result<(), GP
             let _ = stdin.write_all(b"\n");
             return Ok(());
         }
-        Err(e) => {
+        Err(_) => {
             return Err(GPGError::PassphraseError(
                 "Failed to enter passphrase".to_string(),
             ))
