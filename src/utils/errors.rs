@@ -10,6 +10,8 @@ pub enum GPGError {
     WriteFailError(String),
     ReadFailError(String),
     PassphraseError(String),
+    FileNotFoundError(String),
+    FileNotProvidedError(String),
 }
 
 impl Display for GPGError {
@@ -25,6 +27,8 @@ impl Display for GPGError {
             GPGError::WriteFailError(err) => write!(f, "[WriteFailError] {}", err),
             GPGError::ReadFailError(err) => write!(f, "[ReadFailError] {}", err),
             GPGError::PassphraseError(err) => write!(f, "[PassphraseError] {}", err),
+            GPGError::FileNotFoundError(err) => write!(f, "[FileNotFoundError] {}", err),
+            GPGError::FileNotProvidedError(err) => write!(f, "[FileNotProvidedError] {}", err),
         }
     }
 }

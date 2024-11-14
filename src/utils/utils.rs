@@ -1,9 +1,10 @@
-use std::fs::{metadata, set_permissions};
+use std::fs::{metadata, set_permissions, File};
 use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 
 use regex::Regex;
 
+use super::errors::GPGError;
 use super::response::CmdResult;
 
 const VERSION_REGEX: &str = r"^cfg:version:(\d+(\.\d+)*)";
@@ -82,4 +83,20 @@ pub fn get_gpg_version(result: CmdResult) -> (f32, String) {
     // should take into account also that the version
     // might not be in the same format for every version
     return (0.0, "0.0.0".to_string());
+}
+
+pub fn get_file_obj(file: Option<File>, file_path: Option<String>) -> Result<File, GPGError> {
+    if file.is_some() {
+        return Ok(file.unwrap());
+    } else if file_path.is_some() {
+        let file_path = file_path.unwrap();
+        let file = File::open(file_path);
+        if file.is_err() {
+            return Err(GPGError::FileNotFoundError("Not do not exist".to_string()));
+        }
+        return Ok(file.unwrap());
+    }
+    return Err(GPGError::FileNotProvidedError(
+        "File is Required".to_string(),
+    ));
 }

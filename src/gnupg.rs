@@ -1,17 +1,9 @@
-use std::{
-    collections::HashMap,
-    io::Error,
-    process::{Child, ChildStdin},
-    sync::{Arc, Mutex},
-};
+use std::collections::HashMap;
 
-use crate::utils::errors::GPGError;
-use crate::utils::response::{CmdResult, Operation};
+use crate::utils::response::Operation;
+use crate::utils::utils::get_gpg_version;
 use crate::utils::utils::{check_is_dir, get_or_create_gpg_homedir, get_or_create_gpg_output_dir};
-use crate::{
-    process::{collect_cmd_output_response, start_process},
-    utils::utils::get_gpg_version,
-};
+use crate::{process::handle_cmd_io, utils::errors::GPGError};
 
 /// a struct to represent a GPG object
 #[derive(Debug)]
@@ -37,111 +29,71 @@ pub struct GPG {
 }
 
 impl GPG {
-    /// create a new GPG object with default settinga
-    pub fn new() -> Result<GPG, GPGError> {
-        let homedir: String = get_or_create_gpg_homedir();
-        let output_dir: String = get_or_create_gpg_output_dir();
+    /// initialize a GPG object with a homedir and an output_dir or none (system set homedir and output dir)
+    pub fn init(homedir: Option<String>, output_dir: Option<String>) -> Result<GPG, GPGError> {
+        let mut h_d: String = String::from("");
+        let mut o_d: String = String::from("");
 
-        let cmd_process: Result<Child, Error> = start_process(
+        if homedir.is_some() {
+            h_d = homedir.unwrap();
+        } else {
+            h_d = get_or_create_gpg_homedir();
+        }
+        if output_dir.is_some() {
+            o_d = output_dir.unwrap();
+        } else {
+            o_d = get_or_create_gpg_output_dir();
+        }
+
+        if !check_is_dir(h_d.clone()) {
+            return Err(GPGError::OutputDirError(format!(
+                "{} is not a directory",
+                h_d
+            )));
+        }
+        if !check_is_dir(o_d.clone()) {
+            return Err(GPGError::OutputDirError(format!(
+                "{} is not a directory",
+                o_d
+            )));
+        }
+
+        let result = handle_cmd_io(
             Some(vec![
                 "--list-config".to_string(),
                 "--with-colons".to_string(),
             ]),
             None,
             0.0,
-            homedir.clone(),
+            h_d.clone(),
             false,
             None,
             None,
-        );
-        let mut cmd_process = match cmd_process {
-            Ok(child) => child,
-            Err(e) => return Err(GPGError::FailedToStartProcess(e.to_string())),
-        };
-        let child_stdin: ChildStdin = match cmd_process.stdin.take() {
-            Some(stdin) => stdin,
-            None => {
-                return Err(GPGError::FailedToRetrieveChildProcess(
-                    "Fail to retrieve child process".to_string(),
-                ))
-            }
-        };
-        let mut result: CmdResult = CmdResult::init(Operation::Verify);
-        // create a shared result object to be pass into thread(s)
-        let share_result: Arc<Mutex<&mut CmdResult>> = Arc::new(Mutex::new(&mut result));
-        collect_cmd_output_response(cmd_process, share_result, None, Some(child_stdin));
-
-        let version: (f32, String) = get_gpg_version(result);
-
-        return Ok(GPG {
-            homedir: homedir,
-            output_dir: output_dir,
-            env: None,
-            keyrings: None,
-            secret_keyring: None,
-            use_agent: false,
-            options: None,
-            version: version.0,
-            full_version: version.1,
-        });
-    }
-
-    /// initialize a GPG object with a homedir and an output_dir
-    pub fn init(homedir: String, output_dir: String) -> Result<GPG, GPGError> {
-        if !check_is_dir(homedir.clone()) {
-            return Err(GPGError::OutputDirError(format!(
-                "{} is not a directory",
-                homedir
-            )));
-        }
-        if !check_is_dir(output_dir.clone()) {
-            return Err(GPGError::OutputDirError(format!(
-                "{} is not a directory",
-                homedir
-            )));
-        }
-
-        let cmd_process: Result<Child, Error> = start_process(
-            Some(vec![
-                "--list-config".to_string(),
-                "--with-colons".to_string(),
-            ]),
             None,
-            0.0,
-            homedir.clone(),
+            None,
             false,
-            None,
-            None,
+            Operation::Verify,
         );
-        print!("{:?}", cmd_process);
-        let mut cmd_process = match cmd_process {
-            Ok(child) => child,
-            Err(e) => return Err(GPGError::FailedToStartProcess(e.to_string())),
-        };
-        let child_stdin: ChildStdin = match cmd_process.stdin.take() {
-            Some(stdin) => stdin,
-            None => {
-                return Err(GPGError::FailedToRetrieveChildProcess(
-                    "Fail to retrieve child process".to_string(),
-                ))
-            }
-        };
-        let mut result: CmdResult = CmdResult::init(Operation::Verify);
-        // create a shared result object to be pass into thread(s)
-        let share_result: Arc<Mutex<&mut CmdResult>> = Arc::new(Mutex::new(&mut result));
-        collect_cmd_output_response(cmd_process, share_result, None, Some(child_stdin));
 
-        let version: (f32, String) = get_gpg_version(result);
-        return Ok(GPG {
-            homedir: homedir,
-            output_dir: output_dir,
-            env: None,
-            keyrings: None,
-            secret_keyring: None,
-            use_agent: false,
-            options: None,
-            version: version.0,
-            full_version: version.1,
-        });
+        match result {
+            Ok(result) => {
+                println!("{:?}", result);
+                let version: (f32, String) = get_gpg_version(result);
+                return Ok(GPG {
+                    homedir: h_d,
+                    output_dir: o_d,
+                    env: None,
+                    keyrings: None,
+                    secret_keyring: None,
+                    use_agent: false,
+                    options: None,
+                    version: version.0,
+                    full_version: version.1,
+                });
+            }
+            Err(e) => {
+                return Err(GPGError::OutputDirError(format!("{}", e)));
+            }
+        }
     }
 }

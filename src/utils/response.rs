@@ -8,6 +8,8 @@ pub struct CmdResult {
     status: Option<String>,
     status_message: Option<String>,
     operation: Operation,
+    debug_log: Option<Vec<String>>,
+    problem: Option<Vec<String>>,
 }
 
 impl CmdResult {
@@ -18,6 +20,8 @@ impl CmdResult {
             status: None,
             status_message: None,
             operation: ops,
+            debug_log: None,
+            problem: None,
         }
     }
 
@@ -36,6 +40,14 @@ impl CmdResult {
 
     pub fn set_return_code(&mut self, return_code: i32) {
         self.return_code = Some(return_code);
+    }
+
+    pub fn capture_debug_log(&mut self, debug_log: String) {
+        if self.debug_log.is_none() {
+            self.debug_log = Some(vec![debug_log]);
+        } else {
+            self.debug_log.as_mut().unwrap().push(debug_log);
+        }
     }
 }
 
