@@ -2,6 +2,7 @@ use std::{
     collections::HashMap,
     fs::File,
     io::{Error, Read, Write},
+    option,
     process::{Child, ChildStderr, ChildStdin, ChildStdout, Command, ExitStatus, Stdio},
     sync::{Arc, Mutex},
     thread::{self, JoinHandle},
@@ -13,6 +14,7 @@ use crate::utils::{errors::GPGError, response::Operation, utils::get_file_obj};
 const BUFFER_SIZE: usize = 8192;
 
 /// a centralized function to spawn Command and handle its IO
+/// a centralized function to spawn Command and handle its IO
 pub fn handle_cmd_io(
     cmd_args: Option<Vec<String>>,
     passphrase: Option<String>,
@@ -23,18 +25,14 @@ pub fn handle_cmd_io(
     env: Option<HashMap<String, String>>,
     file: Option<File>,
     file_path: Option<String>,
+    byte_input: Option<Vec<u8>>,
     write: bool,
     ops: Operation,
 ) -> Result<CmdResult, GPGError> {
-    let mut p = String::from("");
     let mut write_thread: Option<JoinHandle<()>> = None;
-
-    if passphrase.is_some() {
-        p = passphrase.unwrap().clone();
-    }
     let process: Result<Child, Error> = start_process(
         Some(cmd_args.unwrap()),
-        Some(p.clone()),
+        passphrase.clone(),
         version,
         homedir,
         use_agent,
@@ -46,17 +44,20 @@ pub fn handle_cmd_io(
         Err(e) => return Err(GPGError::FailedToStartProcess(e.to_string())),
     };
     let mut stdin: ChildStdin = cmd_process.stdin.take().unwrap();
-    if p != String::from("") {
-        let _ = write_passphrase(p, &mut stdin);
+    match passphrase {
+        Some(passphrase) => {
+            let _ = stdin.write_all(passphrase.as_bytes());
+        }
+        None => {}
     }
     if write {
         let file: Result<File, GPGError> = get_file_obj(file, file_path);
         match file {
             Ok(file) => {
-                write_thread = Some(start_writing_process(file, stdin));
+                write_thread = Some(start_writing_process(Some(file), byte_input, stdin));
             }
-            Err(err) => {
-                return Err(err);
+            Err(_) => {
+                write_thread = Some(start_writing_process(None, byte_input, stdin));
             }
         }
     }
@@ -151,7 +152,7 @@ pub fn start_process(
     return cmd;
 }
 
-/// to collect error / output from the Command process
+/// to collect output / output from the Command process
 pub fn collect_cmd_output_response(
     mut cmd_process: Child,
     result: Arc<Mutex<&mut CmdResult>>,
@@ -162,10 +163,10 @@ pub fn collect_cmd_output_response(
 
     thread::scope(|s| {
         s.spawn(|| {
-            read_cmd_response(stdout, Arc::clone(&result));
+            read_cmd_output(stdout, Arc::clone(&result));
         });
         s.spawn(|| {
-            read_cmd_error(stderr, Arc::clone(&result));
+            read_cmd_response(stderr, Arc::clone(&result));
         });
     });
     if writer.is_some() {
@@ -182,7 +183,7 @@ pub fn collect_cmd_output_response(
 }
 
 /// read output from stdout
-fn read_cmd_response(mut stdout: ChildStdout, result: Arc<Mutex<&mut CmdResult>>) {
+fn read_cmd_output(mut stdout: ChildStdout, result: Arc<Mutex<&mut CmdResult>>) {
     let mut output_lines: Vec<String> = Vec::new();
     loop {
         let mut buffer: [u8; BUFFER_SIZE] = [0; BUFFER_SIZE];
@@ -205,13 +206,13 @@ fn read_cmd_response(mut stdout: ChildStdout, result: Arc<Mutex<&mut CmdResult>>
     drop(stdout);
 }
 
-/// read error from stderr
-fn read_cmd_error(mut stderr: ChildStderr, result: Arc<Mutex<&mut CmdResult>>) {
-    let mut error_lines: Vec<String> = Vec::new();
+/// read response from stderr
+fn read_cmd_response(mut stderr: ChildStderr, result: Arc<Mutex<&mut CmdResult>>) {
+    let mut response_lines: Vec<String> = Vec::new();
     loop {
         let mut buffer: Vec<u8> = Vec::new();
-        let error_line = stderr.read_to_end(&mut buffer);
-        match error_line {
+        let response_line = stderr.read_to_end(&mut buffer);
+        match response_line {
             Ok(n) => {
                 if n <= 0 {
                     break;
@@ -221,68 +222,92 @@ fn read_cmd_error(mut stderr: ChildStderr, result: Arc<Mutex<&mut CmdResult>>) {
                 break;
             }
         }
-        let error_line_string = String::from_utf8_lossy(&buffer);
-        error_lines.push(error_line_string.to_string());
+        let response_line_string = String::from_utf8_lossy(&buffer);
+        response_lines.push(response_line_string.to_string());
     }
-    let data: String = error_lines.join("");
+    let data: String = response_lines.join("");
     result.lock().unwrap().set_raw_data(data.clone());
     // the following process was to handle the status line(s)
-    for error_line_string in data.clone().split("\n") {
-        if error_line_string.len() >= 9 {
-            if &error_line_string[0..9] == "[GNUPG:] " {
+    for response_line_string in data.clone().split("\n") {
+        if response_line_string.len() >= 9 {
+            if &response_line_string[0..9] == "[GNUPG:] " {
                 // Split into at most 2 parts based on whitespace
-                let parts = &error_line_string[9..].splitn(2, char::is_whitespace);
+                let parts = &response_line_string[9..].splitn(2, char::is_whitespace);
 
                 let mut p = parts.clone();
                 let keyword: String = p.next().unwrap_or("").to_string(); // First part, default to empty string if no part
                 let value: String = p.next().unwrap_or("").to_string(); // Second part, default to empty string if no part
-                println!("keyword: {}", keyword);
-                println!("value: {}", value);
                 result.lock().unwrap().handle_status(keyword, value);
-            } else if &error_line_string[0..5] == "gpg: " {
-                let debug = &error_line_string[5..];
+            } else if &response_line_string[0..5] == "gpg: " {
+                let debug = &response_line_string[5..];
                 result.lock().unwrap().capture_debug_log(debug.to_string());
             }
         }
     }
-    println!("error_lines: \n {}", data);
+    println!("response_lines: \n {}", data);
     drop(stderr);
 }
 
 /// start writing process
-fn start_writing_process(file: File, stdin: ChildStdin) -> JoinHandle<()> {
+fn start_writing_process(
+    file: Option<File>,
+    byte_input: Option<Vec<u8>>,
+    stdin: ChildStdin,
+) -> JoinHandle<()> {
     // TODO: implement write to stdin
     let write_process: JoinHandle<()> = thread::spawn(move || {
-        let _ = write_to_stdin(file, stdin);
+        let _ = write_to_stdin(file, byte_input, stdin);
     });
     return write_process;
 }
 
 // write to stdin
-fn write_to_stdin(mut file: File, mut stdin: ChildStdin) -> Result<(), GPGError> {
-    // TODO: implement write to stdin
-    loop {
-        let mut buffer: [u8; BUFFER_SIZE] = [0; BUFFER_SIZE];
-        let data: Result<usize, Error> = file.read(&mut buffer);
-        match data {
-            Ok(n) => {
-                if n <= 0 {
-                    break;
+fn write_to_stdin(
+    file: Option<File>,
+    byte_input: Option<Vec<u8>>,
+    mut stdin: ChildStdin,
+) -> Result<(), GPGError> {
+    // TODO: implement write input, file or both to stdin
+    match byte_input {
+        Some(byte_input) => {
+            let r: Result<(), Error> = stdin.write_all(&byte_input);
+            match r {
+                Ok(_) => {
+                    return Ok(());
+                }
+                Err(e) => {
+                    return Err(GPGError::WriteFailError(e.to_string()));
                 }
             }
-            Err(e) => {
-                return Err(GPGError::ReadFailError(e.to_string()));
-            }
         }
-        let r: Result<(), Error> = stdin.write_all(&buffer[..data.unwrap()]);
-        match r {
-            Ok(_) => {
-                continue;
+        None => {}
+    }
+
+    match file {
+        Some(mut file) => loop {
+            let mut buffer: [u8; BUFFER_SIZE] = [0; BUFFER_SIZE];
+            let data: Result<usize, Error> = file.read(&mut buffer);
+            match data {
+                Ok(n) => {
+                    if n <= 0 {
+                        break;
+                    }
+                }
+                Err(e) => {
+                    return Err(GPGError::ReadFailError(e.to_string()));
+                }
             }
-            Err(e) => {
-                return Err(GPGError::WriteFailError(e.to_string()));
+            let r: Result<(), Error> = stdin.write_all(&buffer[..data.unwrap()]);
+            match r {
+                Ok(_) => {
+                    continue;
+                }
+                Err(e) => {
+                    return Err(GPGError::WriteFailError(e.to_string()));
+                }
             }
-        }
+        },
+        None => {}
     }
 
     drop(stdin);

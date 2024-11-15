@@ -54,12 +54,14 @@ impl CmdResult {
 #[derive(Debug)]
 pub enum Operation {
     Verify,
+    GenerateKey,
 }
 
 impl Display for Operation {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Operation::Verify => write!(f, "Verify"),
+            Operation::GenerateKey => write!(f, "GenerateKey"),
         }
     }
 }

@@ -109,6 +109,6 @@ pub fn get_file_obj(file: Option<File>, file_path: Option<String>) -> Result<Fil
     }
 
     return Err(GPGError::FileNotProvidedError(
-        "File is Required".to_string(),
+        "File or file path not provided".to_string(),
     ));
 }

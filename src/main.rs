@@ -10,4 +10,13 @@ fn main() {
         }
     };
     println!("{:?}", gpg);
+
+    // NOTE:  GENERATE KEY
+
+    // use std::collections::HashMap;
+    // let passphrase = None;
+    // let mut args: HashMap<String, String> = HashMap::new();
+    // args.insert("Key-Type".to_string(), "DSA".to_string());
+    // let result = gpg.gen_key(args, passphrase);
+    // println!("{:?}", result);
 }
