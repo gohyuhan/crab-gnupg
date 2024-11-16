@@ -24,5 +24,5 @@ fn main() {
     // NOTE:  LIST KEYS
 
     let result = gpg.list_keys(false, None, false);
-    println!("{:?}", result);
+    println!("{:?}", result.unwrap());
 }

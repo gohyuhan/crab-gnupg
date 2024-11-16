@@ -1,10 +1,9 @@
-use std::collections::btree_map::Keys;
 use std::collections::HashMap;
 use std::env;
 
-use crate::utils::response::{CmdResult, Operation};
+use crate::utils::response::{CmdResult, ListKeyResult, Operation};
 use crate::utils::utils::{check_is_dir, get_or_create_gpg_homedir, get_or_create_gpg_output_dir};
-use crate::utils::utils::{decode_result, get_gpg_version};
+use crate::utils::utils::{decode_list_key_result, get_gpg_version};
 use crate::{process::handle_cmd_io, utils::errors::GPGError};
 
 /// a struct to represent a GPG object
@@ -180,19 +179,19 @@ impl GPG {
         secret: bool,
         keys: Option<Vec<String>>,
         signature: bool,
-    ) -> Result<HashMap<String, String>, GPGError> {
+    ) -> Result<Vec<ListKeyResult>, GPGError> {
         let mut mode: String = "keys".to_string();
-        if secret {
-            mode = "secret-keys".to_string();
-        } else if signature {
-            mode = "sigs".to_string();
-        }
-
         let mut args: Vec<String> = vec![
             format!("--list-{}", mode),
             "--fingerprint".to_string(),
             "--fingerprint".to_string(),
         ]; // duplicate --fingerprint to get the subkeys FP as well
+
+        if secret {
+            mode = "secret-keys".to_string();
+        } else if signature {
+            mode = "sigs".to_string();
+        }
 
         if self.version >= 2.1 {
             args.push("--with-keygrip".to_string());
@@ -216,7 +215,7 @@ impl GPG {
         );
         match result {
             Ok(result) => {
-                return Ok(self.retrieve_list_key_output(result));
+                return Ok(self.retrieve_key_output(result));
             }
             Err(e) => {
                 return Err(e);
@@ -224,8 +223,8 @@ impl GPG {
         }
     }
 
-    fn retrieve_list_key_output(&self, result: CmdResult) -> HashMap<String, String> {
-        return decode_result(result);
+    fn retrieve_key_output(&self, result: CmdResult) -> Vec<ListKeyResult> {
+        return decode_list_key_result(result);
     }
 
     pub fn set_use_agent(&mut self) {

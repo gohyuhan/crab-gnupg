@@ -1,12 +1,13 @@
-use std::collections::HashMap;
 use std::fs::{metadata, set_permissions, File};
 use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 
 use regex::Regex;
 
+use crate::utils::response::ListKey;
+
 use super::errors::GPGError;
-use super::response::CmdResult;
+use super::response::{CmdResult, ListKeyResult, Operation};
 
 const VERSION_REGEX: &str = r"^cfg:version:(\d+(\.\d+)*)";
 
@@ -114,20 +115,34 @@ pub fn get_file_obj(file: Option<File>, file_path: Option<String>) -> Result<Fil
     ));
 }
 
-pub fn decode_result(result: CmdResult) -> HashMap<String, String> {
+pub fn decode_list_key_result(result: CmdResult) -> Vec<ListKeyResult>{
     println!("output: {:?}", result);
     let output_lines = result.get_raw_data().unwrap();
     let keywords = ["pub", "uid", "sec", "fpr", "sub", "ssb", "sig", "grp"];
-    let mut r: HashMap<String, String> = HashMap::new();
+    let mut processed_keyword: Vec<String> = Vec::new();
+    let mut r: ListKey = ListKey::init();
     for output in output_lines.split("\n") {
         let l = output.trim().to_string();
         if l.is_empty() {
             break;
         }
+
+        // split the line into a list of strings [ the first will the the key word ]
         let l_key_pair: Vec<&str> = l.split(":").collect();
+        let k_w = l_key_pair[0];
+
+        // check if is was info for the next key
+        if processed_keyword.contains(&k_w.to_string()) {
+            processed_keyword.clear();
+            r.append_result()
+        }
+
+        // process if keyword found
         if keywords.contains(&l_key_pair[0]) {
-            println!("l_key_pair: {:?}", l_key_pair);
+            r.call_method(&l_key_pair[0], l_key_pair);
+            processed_keyword.push(k_w.to_string());
         }
     }
-    return r;
+    r.append_result();
+    return r.get_list_key_result();
 }
