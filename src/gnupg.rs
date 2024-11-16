@@ -1,9 +1,10 @@
+use std::collections::btree_map::Keys;
 use std::collections::HashMap;
 use std::env;
 
 use crate::utils::response::{CmdResult, Operation};
-use crate::utils::utils::get_gpg_version;
 use crate::utils::utils::{check_is_dir, get_or_create_gpg_homedir, get_or_create_gpg_output_dir};
+use crate::utils::utils::{decode_result, get_gpg_version};
 use crate::{process::handle_cmd_io, utils::errors::GPGError};
 
 /// a struct to represent a GPG object
@@ -172,6 +173,59 @@ impl GPG {
         }
         input.push_str("%commit\n");
         return input;
+    }
+
+    pub fn list_keys(
+        &self,
+        secret: bool,
+        keys: Option<Vec<String>>,
+        signature: bool,
+    ) -> Result<HashMap<String, String>, GPGError> {
+        let mut mode: String = "keys".to_string();
+        if secret {
+            mode = "secret-keys".to_string();
+        } else if signature {
+            mode = "sigs".to_string();
+        }
+
+        let mut args: Vec<String> = vec![
+            format!("--list-{}", mode),
+            "--fingerprint".to_string(),
+            "--fingerprint".to_string(),
+        ]; // duplicate --fingerprint to get the subkeys FP as well
+
+        if self.version >= 2.1 {
+            args.push("--with-keygrip".to_string());
+        }
+        if keys.is_some() {
+            args.append(&mut keys.unwrap());
+        }
+        let result = handle_cmd_io(
+            Some(args),
+            None,
+            self.version,
+            self.homedir.clone(),
+            self.use_agent,
+            self.options.clone(),
+            self.env.clone(),
+            None,
+            None,
+            None,
+            false,
+            Operation::ListKey,
+        );
+        match result {
+            Ok(result) => {
+                return Ok(self.retrieve_list_key_output(result));
+            }
+            Err(e) => {
+                return Err(e);
+            }
+        }
+    }
+
+    fn retrieve_list_key_output(&self, result: CmdResult) -> HashMap<String, String> {
+        return decode_result(result);
     }
 
     pub fn set_use_agent(&mut self) {

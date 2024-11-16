@@ -19,4 +19,10 @@ fn main() {
     // args.insert("Key-Type".to_string(), "DSA".to_string());
     // let result = gpg.gen_key(args, passphrase);
     // println!("{:?}", result);
+
+
+    // NOTE:  LIST KEYS
+
+    let result = gpg.list_keys(false, None, false);
+    println!("{:?}", result);
 }

@@ -14,7 +14,6 @@ use crate::utils::{errors::GPGError, response::Operation, utils::get_file_obj};
 const BUFFER_SIZE: usize = 8192;
 
 /// a centralized function to spawn Command and handle its IO
-/// a centralized function to spawn Command and handle its IO
 pub fn handle_cmd_io(
     cmd_args: Option<Vec<String>>,
     passphrase: Option<String>,

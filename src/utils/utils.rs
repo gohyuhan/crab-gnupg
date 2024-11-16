@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fs::{metadata, set_permissions, File};
 use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
@@ -67,7 +68,7 @@ pub fn get_or_create_gpg_output_dir() -> String {
 
 /// retrieve gpg version from result raw data
 pub fn get_gpg_version(result: CmdResult) -> (f32, String) {
-    let data: &Option<String> = result.get_raw_data();
+    let data: Option<String> = result.get_raw_data();
     let re = Regex::new(VERSION_REGEX).unwrap();
 
     if data.is_some() {
@@ -111,4 +112,22 @@ pub fn get_file_obj(file: Option<File>, file_path: Option<String>) -> Result<Fil
     return Err(GPGError::FileNotProvidedError(
         "File or file path not provided".to_string(),
     ));
+}
+
+pub fn decode_result(result: CmdResult) -> HashMap<String, String> {
+    println!("output: {:?}", result);
+    let output_lines = result.get_raw_data().unwrap();
+    let keywords = ["pub", "uid", "sec", "fpr", "sub", "ssb", "sig", "grp"];
+    let mut r: HashMap<String, String> = HashMap::new();
+    for output in output_lines.split("\n") {
+        let l = output.trim().to_string();
+        if l.is_empty() {
+            break;
+        }
+        let l_key_pair: Vec<&str> = l.split(":").collect();
+        if keywords.contains(&l_key_pair[0]) {
+            println!("l_key_pair: {:?}", l_key_pair);
+        }
+    }
+    return r;
 }
