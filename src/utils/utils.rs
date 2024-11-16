@@ -7,9 +7,10 @@ use regex::Regex;
 use crate::utils::response::ListKey;
 
 use super::errors::GPGError;
-use super::response::{CmdResult, ListKeyResult, Operation};
+use super::response::{CmdResult, ListKeyResult};
 
 const VERSION_REGEX: &str = r"^cfg:version:(\d+(\.\d+)*)";
+const LIST_KEY_KEYWORDS: [&str; 8] = ["pub", "uid", "sec", "fpr", "sub", "ssb", "sig", "grp"];
 
 /// check if a path is a directory
 pub fn check_is_dir(path: String) -> bool {
@@ -115,10 +116,9 @@ pub fn get_file_obj(file: Option<File>, file_path: Option<String>) -> Result<Fil
     ));
 }
 
-pub fn decode_list_key_result(result: CmdResult) -> Vec<ListKeyResult>{
+pub fn decode_list_key_result(result: CmdResult) -> Vec<ListKeyResult> {
     println!("output: {:?}", result);
     let output_lines = result.get_raw_data().unwrap();
-    let keywords = ["pub", "uid", "sec", "fpr", "sub", "ssb", "sig", "grp"];
     let mut processed_keyword: Vec<String> = Vec::new();
     let mut r: ListKey = ListKey::init();
     for output in output_lines.split("\n") {
@@ -138,7 +138,7 @@ pub fn decode_list_key_result(result: CmdResult) -> Vec<ListKeyResult>{
         }
 
         // process if keyword found
-        if keywords.contains(&l_key_pair[0]) {
+        if LIST_KEY_KEYWORDS.to_vec().contains(&l_key_pair[0]) {
             r.call_method(&l_key_pair[0], l_key_pair);
             processed_keyword.push(k_w.to_string());
         }

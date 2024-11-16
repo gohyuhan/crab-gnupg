@@ -2,7 +2,6 @@ use std::{
     collections::HashMap,
     fs::File,
     io::{Error, Read, Write},
-    option,
     process::{Child, ChildStderr, ChildStdin, ChildStdout, Command, ExitStatus, Stdio},
     sync::{Arc, Mutex},
     thread::{self, JoinHandle},

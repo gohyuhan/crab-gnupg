@@ -1,6 +1,4 @@
-use std::{any::Any, clone, collections::HashMap, fmt::{Display, Formatter}, iter::Enumerate};
-
-use hostname::get;
+use std::fmt::{Display, Formatter};
 
 /// a result handler for command process output/error result
 #[derive(Debug)]
@@ -57,79 +55,73 @@ impl CmdResult {
     }
 }
 
-
-#[derive(Debug, Clone)] 
+#[derive(Debug, Clone)]
 pub struct ListKeyResult {
-    r#type:Option<String>,
-    trust:Option<String>,
-    length:Option<String>,
-    algo:Option<String>,
-    keyid:Option<String>,
-    date:Option<String>,
-    expires:Option<String>,
-    dummy:Option<String>,
-    ownertrust:Option<String>,
-    uid:Option<String>,
-    sig:Option<String>,
-    cap:Option<String>,
-    issuer:Option<String>,
-    flag:Option<String>,
-    token:Option<String>,
-    hash:Option<String>,
-    curve:Option<String>,
-    compliance:Option<String>,
-    updated:Option<String>,
-    origin:Option<String>,
-    keygrip:Option<String>,
-    uids:Option<Vec<String>>,
-    sigs:Option<Vec<String>>,
-    subkeys:Option<Vec<String>>,
+    r#type: Option<String>,
+    trust: Option<String>,
+    length: Option<String>,
+    algo: Option<String>,
+    keyid: Option<String>,
+    date: Option<String>,
+    expires: Option<String>,
+    dummy: Option<String>,
+    ownertrust: Option<String>,
+    uid: Option<String>,
+    sig: Option<String>,
+    cap: Option<String>,
+    issuer: Option<String>,
+    flag: Option<String>,
+    token: Option<String>,
+    hash: Option<String>,
+    curve: Option<String>,
+    compliance: Option<String>,
+    updated: Option<String>,
+    origin: Option<String>,
+    keygrip: Option<String>,
+    uids: Option<Vec<String>>,
+    sigs: Option<Vec<String>>,
+    subkeys: Option<Vec<String>>,
 }
 
 impl ListKeyResult {
     fn new() -> Self {
         return ListKeyResult {
-            r#type:None,
-            trust:None,
-            length:None,
-            algo:None,
-            keyid:None,
-            date:None,
-            expires:None,
-            dummy:None,
-            ownertrust:None,
-            uid:None,
-            sig:None,
-            cap:None,
-            issuer:None,
-            flag:None,
-            token:None,
-            hash:None,
-            curve:None,
-            compliance:None,
-            updated:None,
-            origin:None,
-            keygrip:None,
-            uids:None,
-            sigs:None,
-            subkeys:None
+            r#type: None,
+            trust: None,
+            length: None,
+            algo: None,
+            keyid: None,
+            date: None,
+            expires: None,
+            dummy: None,
+            ownertrust: None,
+            uid: None,
+            sig: None,
+            cap: None,
+            issuer: None,
+            flag: None,
+            token: None,
+            hash: None,
+            curve: None,
+            compliance: None,
+            updated: None,
+            origin: None,
+            keygrip: None,
+            uids: None,
+            sigs: None,
+            subkeys: None,
         };
     }
-
-    fn as_any(&self) -> &dyn Any { 
-        self 
-    } 
 }
 
 ///  a result handler for handling the result of keys action ( mainly of retrieve key list related action )
 pub struct ListKey {
     // in_subkey: include subkeys
-    // key list: a list of key 
+    // key list: a list of key
     // curkey: current processing key
-    // 
     //
     //
-
+    //
     in_subkey: bool,
     key_list: Option<Vec<ListKeyResult>>,
     curkey: Option<ListKeyResult>,
@@ -137,33 +129,31 @@ pub struct ListKey {
 }
 
 impl ListKey {
-    const LIST_FIELDS:u8 = 21; 
-
     pub fn init() -> ListKey {
         ListKey {
-            in_subkey:false,
-            key_list:Some(Vec::new()),
+            in_subkey: false,
+            key_list: Some(Vec::new()),
             curkey: None,
             fingerprints: Some(Vec::new()),
         }
     }
 
-    pub fn call_method(&mut self, keyword:&str, args:Vec<&str>){
+    pub fn call_method(&mut self, keyword: &str, args: Vec<&str>) {
         match keyword {
             "pub" => self.pub_t(args),
             "uid" => self.uid(args),
-            "sec" => {},
-            "fpr" => {},
-            "sub" => {},
-            "ssb" => {},
-            "sig" => {},
-            "grp" => {},
-            _ => return
+            "sec" => {}
+            "fpr" => {}
+            "sub" => {}
+            "ssb" => {}
+            "sig" => {}
+            "grp" => {}
+            _ => return,
         }
     }
 
-    fn get_fields(&self, args:Vec<&str>) -> ListKeyResult {
-        let mut result: ListKeyResult= ListKeyResult::new();
+    fn get_fields(&self, args: Vec<&str>) -> ListKeyResult {
+        let mut result: ListKeyResult = ListKeyResult::new();
         result.r#type = Some(String::from(args[0]));
         result.trust = Some(String::from(args[1]));
         result.length = Some(String::from(args[2]));
@@ -191,29 +181,41 @@ impl ListKey {
         return result;
     }
 
-    fn pub_t(&mut self, args:Vec<&str>){
+    fn pub_t(&mut self, args: Vec<&str>) {
         self.curkey = Some(self.get_fields(args));
         // remove uid from curkey hashmap and push to uids array
         let uid = self.curkey.as_ref().unwrap().uid.as_ref().unwrap().clone();
-        if !uid.is_empty(){
-            self.curkey.as_mut().unwrap().uids.as_mut().unwrap().push(uid);
+        if !uid.is_empty() {
+            self.curkey
+                .as_mut()
+                .unwrap()
+                .uids
+                .as_mut()
+                .unwrap()
+                .push(uid);
         }
         self.in_subkey = false;
     }
 
-    fn uid(&mut self, args:Vec<&str>){
+    fn uid(&mut self, args: Vec<&str>) {
         let uid_index: usize = 9;
-        self.curkey.as_mut().unwrap().uids.as_mut().unwrap().push(args[uid_index].to_string());
+        self.curkey
+            .as_mut()
+            .unwrap()
+            .uids
+            .as_mut()
+            .unwrap()
+            .push(args[uid_index].to_string());
     }
 
-    pub fn get_list_key_result(&mut self) -> Vec<ListKeyResult>{
+    pub fn get_list_key_result(&mut self) -> Vec<ListKeyResult> {
         if self.curkey.is_none() {
             return vec![ListKeyResult::new()];
         }
         return self.key_list.as_ref().unwrap().clone();
     }
 
-    pub fn append_result(&mut self){
+    pub fn append_result(&mut self) {
         let curkey = self.curkey.as_ref().unwrap().clone();
         self.key_list.as_mut().unwrap().push(curkey);
     }
