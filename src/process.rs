@@ -7,8 +7,12 @@ use std::{
     thread::{self, JoinHandle},
 };
 
-use crate::utils::{errors::GPGError, response::Operation, utils::get_file_obj};
-use crate::{gnupg::GPG, utils::response::CmdResult};
+use crate::utils::response::CmdResult;
+use crate::utils::{
+    errors::{GPGError, GPGErrorType},
+    response::Operation,
+    utils::get_file_obj,
+};
 
 const BUFFER_SIZE: usize = 8192;
 
@@ -26,7 +30,6 @@ pub fn handle_cmd_io(
     byte_input: Option<Vec<u8>>,
     write: bool,
     ops: Operation,
-    cmd_result: &mut CmdResult,
 ) -> Result<CmdResult, GPGError> {
     let mut write_thread: Option<JoinHandle<()>> = None;
     let process: Result<Child, Error> = start_process(
@@ -40,7 +43,12 @@ pub fn handle_cmd_io(
     );
     let mut cmd_process = match process {
         Ok(child) => child,
-        Err(e) => return Err(GPGError::FailedToStartProcess(e.to_string())),
+        Err(e) => {
+            return Err(GPGError::new(
+                GPGErrorType::FailedToStartProcess(e.to_string()),
+                None,
+            ))
+        }
     };
     let mut stdin: ChildStdin = cmd_process.stdin.take().unwrap();
     match passphrase {
@@ -63,11 +71,13 @@ pub fn handle_cmd_io(
     let mut result = CmdResult::init(ops);
     let share_result: Arc<Mutex<&mut CmdResult>> = Arc::new(Mutex::new(&mut result));
     collect_cmd_output_response(cmd_process, share_result, write_thread);
-    cmd_result.clone_cmd_info(&result);
     if result.is_success() {
         return Ok(result);
     }
-    return Err(GPGError::GPGProcessError(result.get_error_message()));
+    return Err(GPGError::new(
+        GPGErrorType::GPGProcessError(result.get_error_message()),
+        Some(result),
+    ));
 }
 
 /// generate a list of arguments to be passed to gpg process
@@ -279,7 +289,10 @@ fn write_to_stdin(
                     return Ok(());
                 }
                 Err(e) => {
-                    return Err(GPGError::WriteFailError(e.to_string()));
+                    return Err(GPGError::new(
+                        GPGErrorType::WriteFailError(e.to_string()),
+                        None,
+                    ));
                 }
             }
         }
@@ -297,7 +310,10 @@ fn write_to_stdin(
                     }
                 }
                 Err(e) => {
-                    return Err(GPGError::ReadFailError(e.to_string()));
+                    return Err(GPGError::new(
+                        GPGErrorType::ReadFailError(e.to_string()),
+                        None,
+                    ));
                 }
             }
             let r: Result<(), Error> = stdin.write_all(&buffer[..data.unwrap()]);
@@ -306,7 +322,10 @@ fn write_to_stdin(
                     continue;
                 }
                 Err(e) => {
-                    return Err(GPGError::WriteFailError(e.to_string()));
+                    return Err(GPGError::new(
+                        GPGErrorType::WriteFailError(e.to_string()),
+                        None,
+                    ));
                 }
             }
         },
@@ -326,9 +345,10 @@ fn write_passphrase(passphrase: String, stdin: &mut ChildStdin) -> Result<(), GP
             return Ok(());
         }
         Err(_) => {
-            return Err(GPGError::PassphraseError(
-                "Failed to enter passphrase".to_string(),
-            ))
+            return Err(GPGError::new(
+                GPGErrorType::PassphraseError("Failed to enter passphrase".to_string()),
+                None,
+            ));
         }
     }
 }

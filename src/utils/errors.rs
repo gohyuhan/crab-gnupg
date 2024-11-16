@@ -1,7 +1,26 @@
 use std::fmt::{Display, Formatter};
 
+use super::response::CmdResult;
+
 #[derive(Debug)]
-pub enum GPGError {
+pub struct GPGError {
+    // the type of error
+    error_type: GPGErrorType,
+    // provide more insight if error occured during the gpg cmd process
+    cmd_result: Option<CmdResult>,
+}
+
+impl GPGError {
+    pub fn new(error_type: GPGErrorType, cmd_result: Option<CmdResult>) -> GPGError {
+        return GPGError {
+            error_type,
+            cmd_result,
+        };
+    }
+}
+
+#[derive(Debug)]
+pub enum GPGErrorType {
     HomedirError(String),
     OutputDirError(String),
     GPGInitError(String),
@@ -16,23 +35,23 @@ pub enum GPGError {
     FileNotProvidedError(String),
 }
 
-impl Display for GPGError {
+impl Display for GPGErrorType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            GPGError::HomedirError(err) => write!(f, "[HomedirError] {}", err),
-            GPGError::OutputDirError(err) => write!(f, "[OutputDirError] {}", err),
-            GPGError::GPGInitError(err) => write!(f, "[GPGInitError] {}", err),
-            GPGError::GPGNotFoundError(err) => write!(f, "[GPGNotFoundError] {}", err),
-            GPGError::GPGProcessError(err) => write!(f, "[GPGProcessError] {}", err),
-            GPGError::FailedToStartProcess(err) => write!(f, "[FailedToStartProcess] {}", err),
-            GPGError::FailedToRetrieveChildProcess(err) => {
+            GPGErrorType::HomedirError(err) => write!(f, "[HomedirError] {}", err),
+            GPGErrorType::OutputDirError(err) => write!(f, "[OutputDirError] {}", err),
+            GPGErrorType::GPGInitError(err) => write!(f, "[GPGInitError] {}", err),
+            GPGErrorType::GPGNotFoundError(err) => write!(f, "[GPGNotFoundError] {}", err),
+            GPGErrorType::GPGProcessError(err) => write!(f, "[GPGProcessError] {}", err),
+            GPGErrorType::FailedToStartProcess(err) => write!(f, "[FailedToStartProcess] {}", err),
+            GPGErrorType::FailedToRetrieveChildProcess(err) => {
                 write!(f, "[FailedToRetrieveChildProcess] {}", err)
             }
-            GPGError::WriteFailError(err) => write!(f, "[WriteFailError] {}", err),
-            GPGError::ReadFailError(err) => write!(f, "[ReadFailError] {}", err),
-            GPGError::PassphraseError(err) => write!(f, "[PassphraseError] {}", err),
-            GPGError::FileNotFoundError(err) => write!(f, "[FileNotFoundError] {}", err),
-            GPGError::FileNotProvidedError(err) => write!(f, "[FileNotProvidedError] {}", err),
+            GPGErrorType::WriteFailError(err) => write!(f, "[WriteFailError] {}", err),
+            GPGErrorType::ReadFailError(err) => write!(f, "[ReadFailError] {}", err),
+            GPGErrorType::PassphraseError(err) => write!(f, "[PassphraseError] {}", err),
+            GPGErrorType::FileNotFoundError(err) => write!(f, "[FileNotFoundError] {}", err),
+            GPGErrorType::FileNotProvidedError(err) => write!(f, "[FileNotProvidedError] {}", err),
         }
     }
 }

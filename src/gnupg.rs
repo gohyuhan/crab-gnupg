@@ -1,6 +1,7 @@
 use std::collections::HashMap;
-use std::{env, result};
+use std::env;
 
+use crate::utils::errors::GPGErrorType;
 use crate::utils::response::{CmdResult, ListKeyResult, Operation};
 use crate::utils::utils::{check_is_dir, get_or_create_gpg_homedir, get_or_create_gpg_output_dir};
 use crate::utils::utils::{decode_list_key_result, get_gpg_version};
@@ -27,8 +28,6 @@ pub struct GPG {
     version: f32,
     /// the full version of gpg, should only be set by system, user should not set this ex) 2.4.6
     full_version: String,
-    /// provide more insight to the cmd gpg process
-    cmd_result: CmdResult,
 }
 
 impl GPG {
@@ -49,18 +48,17 @@ impl GPG {
         }
 
         if !check_is_dir(h_d.clone()) {
-            return Err(GPGError::OutputDirError(format!(
-                "{} is not a directory",
-                h_d
-            )));
+            return Err(GPGError::new(
+                GPGErrorType::OutputDirError(format!("{} is not a directory", h_d)),
+                None,
+            ));
         }
         if !check_is_dir(o_d.clone()) {
-            return Err(GPGError::OutputDirError(format!(
-                "{} is not a directory",
-                o_d
-            )));
+            return Err(GPGError::new(
+                GPGErrorType::OutputDirError(format!("{} is not a directory", o_d)),
+                None,
+            ));
         }
-        let mut r: CmdResult = CmdResult::init(Operation::Verify);
         let result = handle_cmd_io(
             Some(vec![
                 "--list-config".to_string(),
@@ -77,7 +75,6 @@ impl GPG {
             None,
             false,
             Operation::Verify,
-            &mut r,
         );
 
         match result {
@@ -94,17 +91,16 @@ impl GPG {
                     options: None,
                     version: version.0,
                     full_version: version.1,
-                    cmd_result: r,
                 });
             }
             Err(e) => {
-                return Err(GPGError::GPGInitError(format!("{}", e)));
+                return Err(e);
             }
         }
     }
 
     pub fn gen_key(
-        &mut self,
+        &self,
         args: HashMap<String, String>,
         passphrase: Option<String>,
     ) -> Result<CmdResult, GPGError> {
@@ -123,7 +119,6 @@ impl GPG {
             Some(input.as_bytes().to_vec()),
             true,
             Operation::GenerateKey,
-            &mut self.cmd_result,
         );
         return result;
     }
@@ -181,7 +176,7 @@ impl GPG {
     }
 
     pub fn list_keys(
-        &mut self,
+        & self,
         secret: bool,
         keys: Option<Vec<String>>,
         signature: bool,
@@ -218,7 +213,6 @@ impl GPG {
             None,
             false,
             Operation::ListKey,
-            &mut self.cmd_result,
         );
         match result {
             Ok(result) => {

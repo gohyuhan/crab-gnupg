@@ -6,7 +6,7 @@ use regex::Regex;
 
 use crate::utils::response::ListKey;
 
-use super::errors::GPGError;
+use super::errors::{GPGError, GPGErrorType};
 use super::response::{CmdResult, ListKeyResult};
 
 const VERSION_REGEX: &str = r"^cfg:version:(\d+(\.\d+)*)";
@@ -105,14 +105,18 @@ pub fn get_file_obj(file: Option<File>, file_path: Option<String>) -> Result<Fil
         let file = File::open(file_path);
 
         if file.is_err() {
-            return Err(GPGError::FileNotFoundError("Not do not exist".to_string()));
+            return Err(GPGError::new(
+                GPGErrorType::FileNotFoundError("Not do not exist".to_string()),
+                None,
+            ));
         }
 
         return Ok(file.unwrap());
     }
 
-    return Err(GPGError::FileNotProvidedError(
-        "File or file path not provided".to_string(),
+    return Err(GPGError::new(
+        GPGErrorType::FileNotProvidedError("File or file path not provided".to_string()),
+        None,
     ));
 }
 
