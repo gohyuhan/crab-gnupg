@@ -69,7 +69,7 @@ pub fn get_or_create_gpg_output_dir() -> String {
 }
 
 /// retrieve gpg version from result raw data
-pub fn get_gpg_version(result: CmdResult) -> (f32, String) {
+pub fn get_gpg_version(result: &CmdResult) -> (f32, String) {
     let data: Option<String> = result.get_raw_data();
     let re = Regex::new(VERSION_REGEX).unwrap();
 
@@ -132,7 +132,7 @@ pub fn decode_list_key_result(result: CmdResult) -> Vec<ListKeyResult> {
         let k_w = l_key_pair[0];
 
         // check if is was info for the next key
-        if processed_keyword.contains(&k_w.to_string()) {
+        if processed_keyword.contains(&k_w.to_string()) && (k_w == "pub" || k_w == "sec") {
             processed_keyword.clear();
             r.append_result()
         }

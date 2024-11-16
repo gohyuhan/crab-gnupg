@@ -4,7 +4,9 @@ use std::fmt::{Display, Formatter};
 pub enum GPGError {
     HomedirError(String),
     OutputDirError(String),
+    GPGInitError(String),
     GPGNotFoundError(String),
+    GPGProcessError(String),
     FailedToStartProcess(String),
     FailedToRetrieveChildProcess(String),
     WriteFailError(String),
@@ -19,7 +21,9 @@ impl Display for GPGError {
         match self {
             GPGError::HomedirError(err) => write!(f, "[HomedirError] {}", err),
             GPGError::OutputDirError(err) => write!(f, "[OutputDirError] {}", err),
+            GPGError::GPGInitError(err) => write!(f, "[GPGInitError] {}", err),
             GPGError::GPGNotFoundError(err) => write!(f, "[GPGNotFoundError] {}", err),
+            GPGError::GPGProcessError(err) => write!(f, "[GPGProcessError] {}", err),
             GPGError::FailedToStartProcess(err) => write!(f, "[FailedToStartProcess] {}", err),
             GPGError::FailedToRetrieveChildProcess(err) => {
                 write!(f, "[FailedToRetrieveChildProcess] {}", err)

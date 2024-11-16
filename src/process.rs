@@ -7,8 +7,8 @@ use std::{
     thread::{self, JoinHandle},
 };
 
-use crate::utils::response::CmdResult;
 use crate::utils::{errors::GPGError, response::Operation, utils::get_file_obj};
+use crate::{gnupg::GPG, utils::response::CmdResult};
 
 const BUFFER_SIZE: usize = 8192;
 
@@ -26,6 +26,7 @@ pub fn handle_cmd_io(
     byte_input: Option<Vec<u8>>,
     write: bool,
     ops: Operation,
+    cmd_result: &mut CmdResult,
 ) -> Result<CmdResult, GPGError> {
     let mut write_thread: Option<JoinHandle<()>> = None;
     let process: Result<Child, Error> = start_process(
@@ -62,7 +63,11 @@ pub fn handle_cmd_io(
     let mut result = CmdResult::init(ops);
     let share_result: Arc<Mutex<&mut CmdResult>> = Arc::new(Mutex::new(&mut result));
     collect_cmd_output_response(cmd_process, share_result, write_thread);
-    return Ok(result);
+    cmd_result.clone_cmd_info(&result);
+    if result.is_success() {
+        return Ok(result);
+    }
+    return Err(GPGError::GPGProcessError(result.get_error_message()));
 }
 
 /// generate a list of arguments to be passed to gpg process
@@ -233,7 +238,7 @@ fn read_cmd_response(mut stderr: ChildStderr, result: Arc<Mutex<&mut CmdResult>>
                 let parts = &response_line_string[9..].splitn(2, char::is_whitespace);
 
                 let mut p = parts.clone();
-                let keyword: String = p.next().unwrap_or("").to_string(); // First part, default to empty string if no part
+                let keyword: &str = p.next().unwrap_or(""); // First part, default to empty string if no part
                 let value: String = p.next().unwrap_or("").to_string(); // Second part, default to empty string if no part
                 result.lock().unwrap().handle_status(keyword, value);
             } else if &response_line_string[0..5] == "gpg: " {

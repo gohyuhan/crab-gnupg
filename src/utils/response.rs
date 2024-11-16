@@ -1,7 +1,12 @@
 use std::fmt::{Display, Formatter};
 
 /// a result handler for command process output/error result
-#[derive(Debug)]
+//*******************************************************
+
+//            RELATED TO RESPONSE HANDLING
+
+//*******************************************************
+#[derive(Debug, Clone)]
 pub struct CmdResult {
     raw_data: Option<String>,
     return_code: Option<i32>,
@@ -10,6 +15,7 @@ pub struct CmdResult {
     operation: Operation,
     debug_log: Option<Vec<String>>,
     problem: Option<Vec<String>>,
+    success: bool,
 }
 
 impl CmdResult {
@@ -22,6 +28,7 @@ impl CmdResult {
             operation: ops,
             debug_log: None,
             problem: None,
+            success: true,
         }
     }
 
@@ -37,9 +44,13 @@ impl CmdResult {
         return self.raw_data.clone();
     }
 
-    pub fn handle_status(&mut self, keyword: String, value: String) {
-        self.status = Some(keyword);
-        self.status_message = Some(value);
+    pub fn handle_status(&mut self, keyword: &str, value: String) {
+        self.status = Some(keyword.to_string());
+        self.status_message = Some(value.to_string());
+
+        if keyword == "FAILURE" {
+            self.success = false;
+        }
     }
 
     pub fn set_return_code(&mut self, return_code: i32) {
@@ -53,63 +64,145 @@ impl CmdResult {
             self.debug_log.as_mut().unwrap().push(debug_log);
         }
     }
+
+    pub fn is_success(&self) -> bool {
+        return self.success;
+    }
+
+    pub fn get_error_message(&mut self) -> String {
+        return self
+            .status_message
+            .as_mut()
+            .unwrap_or(&mut "Undefined Error".to_string())
+            .clone();
+    }
+
+    pub fn clone_cmd_info(&mut self, cmd_result: &CmdResult) {
+        self.raw_data = cmd_result.raw_data.clone();
+        self.return_code = cmd_result.return_code.clone();
+        self.status = cmd_result.status.clone();
+        self.status_message = cmd_result.status_message.clone();
+        self.operation = cmd_result.operation.clone();
+        self.debug_log = cmd_result.debug_log.clone();
+        self.problem = cmd_result.problem.clone();
+        self.success = cmd_result.success;
+    }
 }
 
+//*******************************************************
+
+//            RELATED TO LIST KEY RESULT
+
+//*******************************************************
 #[derive(Debug, Clone)]
 pub struct ListKeyResult {
-    r#type: Option<String>,
-    trust: Option<String>,
-    length: Option<String>,
-    algo: Option<String>,
-    keyid: Option<String>,
-    date: Option<String>,
-    expires: Option<String>,
-    dummy: Option<String>,
-    ownertrust: Option<String>,
-    uid: Option<String>,
-    sig: Option<String>,
-    cap: Option<String>,
-    issuer: Option<String>,
-    flag: Option<String>,
-    token: Option<String>,
-    hash: Option<String>,
-    curve: Option<String>,
-    compliance: Option<String>,
-    updated: Option<String>,
-    origin: Option<String>,
-    keygrip: Option<String>,
-    uids: Option<Vec<String>>,
-    sigs: Option<Vec<String>>,
-    subkeys: Option<Vec<String>>,
+    r#type: String,
+    trust: String,
+    length: String,
+    algo: String,
+    keyid: String,
+    date: String,
+    expires: String,
+    dummy: String,
+    ownertrust: String,
+    uid: String,
+    sig: String,
+    cap: String,
+    issuer: String,
+    flag: String,
+    token: String,
+    hash: String,
+    curve: String,
+    compliance: String,
+    updated: String,
+    origin: String,
+    keygrip: String,
+    uids: Vec<String>,
+    sigs: Vec<String>,
+    subkeys: Vec<Subkey>,
+    fingerprint: String,
 }
 
 impl ListKeyResult {
-    fn new() -> Self {
+    fn new(args: Vec<&str>) -> Self {
         return ListKeyResult {
-            r#type: None,
-            trust: None,
-            length: None,
-            algo: None,
-            keyid: None,
-            date: None,
-            expires: None,
-            dummy: None,
-            ownertrust: None,
-            uid: None,
-            sig: None,
-            cap: None,
-            issuer: None,
-            flag: None,
-            token: None,
-            hash: None,
-            curve: None,
-            compliance: None,
-            updated: None,
-            origin: None,
-            keygrip: None,
-            uids: None,
-            sigs: None,
-            subkeys: None,
+            r#type: String::from(args[0]),
+            trust: String::from(args[1]),
+            length: String::from(args[2]),
+            algo: String::from(args[3]),
+            keyid: String::from(args[4]),
+            date: String::from(args[5]),
+            expires: String::from(args[6]),
+            dummy: String::from(args[7]),
+            ownertrust: String::from(args[8]),
+            uid: String::from(args[9]),
+            sig: String::from(args[10]),
+            cap: String::from(args[11]),
+            issuer: String::from(args[12]),
+            flag: String::from(args[13]),
+            token: String::from(args[14]),
+            hash: String::from(args[15]),
+            curve: String::from(args[16]),
+            compliance: String::from(args[17]),
+            updated: String::from(args[18]),
+            origin: String::from(args[19]),
+            keygrip: String::from(args[20]),
+            uids: vec![],
+            sigs: vec![],
+            subkeys: vec![],
+            fingerprint: String::from(""),
+        };
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Subkey {
+    r#type: String,
+    trust: String,
+    length: String,
+    algo: String,
+    keyid: String,
+    date: String,
+    expires: String,
+    dummy: String,
+    ownertrust: String,
+    uid: String,
+    sig: String,
+    cap: String,
+    issuer: String,
+    flag: String,
+    token: String,
+    hash: String,
+    curve: String,
+    compliance: String,
+    updated: String,
+    keygrip: String,
+    fingerprint: String,
+}
+impl Subkey {
+    fn new(args: Vec<&str>) -> Self {
+        return Subkey {
+            r#type: String::from(args[0]),
+            trust: String::from(args[1]),
+            length: String::from(args[2]),
+            algo: String::from(args[3]),
+            keyid: String::from(args[4]),
+            date: String::from(args[5]),
+            expires: String::from(args[6]),
+            dummy: String::from(args[7]),
+            ownertrust: String::from(args[8]),
+            uid: String::from(args[9]),
+            sig: String::from(args[10]),
+            cap: String::from(args[11]),
+            issuer: String::from(args[12]),
+            flag: String::from(args[13]),
+            token: String::from(args[14]),
+            hash: String::from(args[15]),
+            curve: String::from(args[16]),
+            compliance: String::from(args[17]),
+            updated: String::from(args[18]),
+            keygrip: String::from(""),
+            fingerprint: String::from(""),
         };
     }
 }
@@ -119,9 +212,7 @@ pub struct ListKey {
     // in_subkey: include subkeys
     // key list: a list of key
     // curkey: current processing key
-    //
-    //
-    //
+    // fingerprints: a list of fingerprints
     in_subkey: bool,
     key_list: Option<Vec<ListKeyResult>>,
     curkey: Option<ListKeyResult>,
@@ -142,57 +233,22 @@ impl ListKey {
         match keyword {
             "pub" => self.pub_t(args),
             "uid" => self.uid(args),
-            "sec" => {}
-            "fpr" => {}
-            "sub" => {}
-            "ssb" => {}
-            "sig" => {}
-            "grp" => {}
+            "sec" => self.uid(args),
+            "fpr" => self.fpr(args),
+            "sub" => self.sub(args),
+            "ssb" => self.ssb(args),
+            "sig" => self.sig(args),
+            "grp" => self.grp(args),
             _ => return,
         }
     }
 
-    fn get_fields(&self, args: Vec<&str>) -> ListKeyResult {
-        let mut result: ListKeyResult = ListKeyResult::new();
-        result.r#type = Some(String::from(args[0]));
-        result.trust = Some(String::from(args[1]));
-        result.length = Some(String::from(args[2]));
-        result.algo = Some(String::from(args[3]));
-        result.keyid = Some(String::from(args[4]));
-        result.date = Some(String::from(args[5]));
-        result.expires = Some(String::from(args[6]));
-        result.dummy = Some(String::from(args[7]));
-        result.ownertrust = Some(String::from(args[8]));
-        result.uid = Some(String::from(args[9]));
-        result.sig = Some(String::from(args[10]));
-        result.cap = Some(String::from(args[11]));
-        result.issuer = Some(String::from(args[12]));
-        result.flag = Some(String::from(args[13]));
-        result.token = Some(String::from(args[14]));
-        result.hash = Some(String::from(args[15]));
-        result.curve = Some(String::from(args[16]));
-        result.compliance = Some(String::from(args[17]));
-        result.updated = Some(String::from(args[18]));
-        result.origin = Some(String::from(args[19]));
-        result.keygrip = Some(String::from(args[20]));
-        result.uids = Some(vec![]);
-        result.sigs = Some(vec![]);
-        result.subkeys = Some(vec![]);
-        return result;
-    }
-
     fn pub_t(&mut self, args: Vec<&str>) {
-        self.curkey = Some(self.get_fields(args));
+        self.curkey = Some(ListKeyResult::new(args));
         // remove uid from curkey hashmap and push to uids array
-        let uid = self.curkey.as_ref().unwrap().uid.as_ref().unwrap().clone();
+        let uid = self.curkey.as_ref().unwrap().uid.clone();
         if !uid.is_empty() {
-            self.curkey
-                .as_mut()
-                .unwrap()
-                .uids
-                .as_mut()
-                .unwrap()
-                .push(uid);
+            self.curkey.as_mut().unwrap().uids.push(uid);
         }
         self.in_subkey = false;
     }
@@ -203,14 +259,53 @@ impl ListKey {
             .as_mut()
             .unwrap()
             .uids
-            .as_mut()
-            .unwrap()
             .push(args[uid_index].to_string());
+    }
+
+    fn fpr(&mut self, args: Vec<&str>) {
+        let fingerprint = args[9].to_string();
+        if !self.in_subkey {
+            self.curkey.as_mut().unwrap().fingerprint = fingerprint.clone();
+            self.fingerprints.as_mut().unwrap().push(fingerprint);
+        } else {
+            let len: usize = self.curkey.as_ref().unwrap().subkeys.len();
+            self.curkey.as_mut().unwrap().subkeys[len - 1].fingerprint = fingerprint;
+        }
+    }
+
+    fn sub(&mut self, args: Vec<&str>) {
+        let subkey: Subkey = Subkey::new(args);
+        self.curkey.as_mut().unwrap().subkeys.push(subkey);
+        self.in_subkey = true;
+    }
+
+    fn ssb(&mut self, args: Vec<&str>) {
+        let subkey: Subkey = Subkey::new(args);
+        self.curkey.as_mut().unwrap().subkeys.push(subkey);
+        self.in_subkey = true;
+    }
+
+    fn sig(&mut self, args: Vec<&str>) {
+        self.curkey.as_mut().unwrap().sigs.append(&mut vec![
+            args[4].to_string(),
+            args[9].to_string(),
+            args[10].to_string(),
+        ]);
+    }
+
+    fn grp(&mut self, args: Vec<&str>) {
+        let grp: String = args[9].to_string();
+        if !self.in_subkey {
+            self.curkey.as_mut().unwrap().keygrip = grp;
+        } else {
+            let len: usize = self.curkey.as_ref().unwrap().subkeys.len();
+            self.curkey.as_mut().unwrap().subkeys[len - 1].keygrip = grp;
+        }
     }
 
     pub fn get_list_key_result(&mut self) -> Vec<ListKeyResult> {
         if self.curkey.is_none() {
-            return vec![ListKeyResult::new()];
+            return vec![];
         }
         return self.key_list.as_ref().unwrap().clone();
     }
@@ -223,6 +318,7 @@ impl ListKey {
 
 #[derive(Debug, Clone)]
 pub enum Operation {
+    NotSet,
     Verify,
     GenerateKey,
     ListKey,
@@ -232,6 +328,7 @@ pub enum Operation {
 impl Display for Operation {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
+            Operation::NotSet => write!(f, "NotSet"),
             Operation::Verify => write!(f, "Verify"),
             Operation::GenerateKey => write!(f, "GenerateKey"),
             Operation::ListKey => write!(f, "ListKey"),
