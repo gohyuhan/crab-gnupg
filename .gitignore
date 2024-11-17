@@ -2,5 +2,9 @@
 /target/
 
 # Ignore operating system-specific files
-.DS_Store      # macOS
-Thumbs.db      # Windows
+.DS_Store
+Thumbs.db
+
+# Ignore file(s) for testing purposes
+test.txt
+   
