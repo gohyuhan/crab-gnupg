@@ -323,6 +323,7 @@ pub enum Operation {
     GenerateKey,
     ListKey,
     SearchKey,
+    Encrypt,
 }
 
 impl Display for Operation {
@@ -333,6 +334,7 @@ impl Display for Operation {
             Operation::GenerateKey => write!(f, "GenerateKey"),
             Operation::ListKey => write!(f, "ListKey"),
             Operation::SearchKey => write!(f, "SearchKey"),
+            Operation::Encrypt => write!(f, "Encrypt"),
         }
     }
 }

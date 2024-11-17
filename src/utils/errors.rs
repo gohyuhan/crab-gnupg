@@ -26,6 +26,7 @@ pub enum GPGErrorType {
     GPGInitError(String),
     GPGNotFoundError(String),
     GPGProcessError(String),
+    InvalidArgumentError(String),
     FailedToStartProcess(String),
     FailedToRetrieveChildProcess(String),
     WriteFailError(String),
@@ -43,6 +44,7 @@ impl Display for GPGErrorType {
             GPGErrorType::GPGInitError(err) => write!(f, "[GPGInitError] {}", err),
             GPGErrorType::GPGNotFoundError(err) => write!(f, "[GPGNotFoundError] {}", err),
             GPGErrorType::GPGProcessError(err) => write!(f, "[GPGProcessError] {}", err),
+            GPGErrorType::InvalidArgumentError(err) => write!(f, "[InvalidArgumentError] {}", err),
             GPGErrorType::FailedToStartProcess(err) => write!(f, "[FailedToStartProcess] {}", err),
             GPGErrorType::FailedToRetrieveChildProcess(err) => {
                 write!(f, "[FailedToRetrieveChildProcess] {}", err)

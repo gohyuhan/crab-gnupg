@@ -32,7 +32,7 @@ fn get_user_directory() -> String {
 ///  retrieve or generate the directory for gpg key
 pub fn get_or_create_gpg_homedir() -> String {
     let home_dir = get_user_directory();
-    let gpg_dir = format!("{}/{}", home_dir, ".gnupg");
+    let gpg_dir = format!("{}/{}/", home_dir, ".gnupg");
 
     if !check_is_dir(gpg_dir.clone()) {
         std::fs::create_dir_all(gpg_dir.clone()).unwrap();
@@ -59,7 +59,7 @@ pub fn get_or_create_gpg_homedir() -> String {
 ///  retrieve or generate the directory for gpg output
 pub fn get_or_create_gpg_output_dir() -> String {
     let home_dir = get_user_directory();
-    let gpg_output_dir = format!("{}/{}", home_dir, "gnupg/output");
+    let gpg_output_dir = format!("{}/{}/", home_dir, "gnupg/output");
 
     if !check_is_dir(gpg_output_dir.clone()) {
         std::fs::create_dir_all(gpg_output_dir.clone()).unwrap();
@@ -106,7 +106,7 @@ pub fn get_file_obj(file: Option<File>, file_path: Option<String>) -> Result<Fil
 
         if file.is_err() {
             return Err(GPGError::new(
-                GPGErrorType::FileNotFoundError("Not do not exist".to_string()),
+                GPGErrorType::FileNotFoundError("File do not exist".to_string()),
                 None,
             ));
         }
@@ -149,4 +149,30 @@ pub fn decode_list_key_result(result: CmdResult) -> Vec<ListKeyResult> {
     }
     r.append_result();
     return r.get_list_key_result();
+}
+
+pub fn is_passphrase_valid(passhrase: &str) -> bool {
+    return !passhrase.contains("\n") && !passhrase.contains("\r") && !passhrase.contains("\x00");
+}
+
+pub fn set_output_without_confirmation(args: &mut Vec<String>, output: &str) {
+    // prevent a confimation prompt when output provided exist
+    if Path::new(output).exists() {
+        args.push("--yes".to_string()); // assume yes on most question
+    }
+    args.append(&mut vec!["--output".to_string(), output.to_string()]);
+}
+
+pub fn get_file_extension(file_path: Option<String>) -> String {
+    let mut ext: String = "".to_string();
+
+    if file_path.is_some() {
+        let p = file_path.unwrap();
+        let path = Path::new(p.as_str());
+        ext = path
+            .extension()
+            .map(|ext| ext.to_string_lossy().into_owned())
+            .unwrap_or("gpg".to_string());
+    }
+    return ext;
 }

@@ -3,7 +3,7 @@ pub mod process;
 pub mod utils;
 
 fn main() {
-    let mut gpg = match gnupg::GPG::init(None, None) {
+    let gpg = match gnupg::GPG::init(None, None) {
         Ok(gpg) => gpg,
         Err(_) => {
             return;
@@ -24,7 +24,29 @@ fn main() {
 
     // NOTE:  LIST KEYS
 
-    let result = gpg.list_keys(false, None, false);
-    println!("{:?}", result.unwrap());
-    println!("GPG:  {:?}", gpg);
+    // let result = gpg.list_keys(false, None, false);
+    // println!("{:?}", result.unwrap());
+    // println!("GPG:  {:?}", gpg);
+
+    // NOTE:  ENCRYPT
+
+    let result = gpg.encrypt(
+        None,
+        Some("/Users/gohyuhan/crab-gnupg/test.txt".to_string()),
+        Some(vec![
+            "D6DD040DBA05F474".to_string(),
+            "E6FC15EB4B28E6B6".to_string(),
+        ]),
+        false,
+        // Some("D6DD040DBA05F474".to_string()),
+        None,
+        false,
+        None,
+        true,
+        None,
+        false,
+        None,
+        None,
+    );
+    println!("{:?}", result);
 }

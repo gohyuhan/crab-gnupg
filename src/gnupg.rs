@@ -1,9 +1,16 @@
+use core::time;
 use std::collections::HashMap;
 use std::env;
+use std::fs::File;
+
+use chrono::Local;
 
 use crate::utils::errors::GPGErrorType;
 use crate::utils::response::{CmdResult, ListKeyResult, Operation};
-use crate::utils::utils::{check_is_dir, get_or_create_gpg_homedir, get_or_create_gpg_output_dir};
+use crate::utils::utils::{
+    check_is_dir, get_file_extension, get_or_create_gpg_homedir, get_or_create_gpg_output_dir,
+    is_passphrase_valid, set_output_without_confirmation,
+};
 use crate::utils::utils::{decode_list_key_result, get_gpg_version};
 use crate::{process::handle_cmd_io, utils::errors::GPGError};
 
@@ -33,6 +40,9 @@ pub struct GPG {
 impl GPG {
     /// initialize a GPG object with a homedir and an output_dir or none (system set homedir and output dir)
     pub fn init(homedir: Option<String>, output_dir: Option<String>) -> Result<GPG, GPGError> {
+        // homedir: a path to a directory where the local key were at
+        // output_dir: a path to a directory where the output files from gpg will save to
+
         let mut h_d: String = String::from("");
         let mut o_d: String = String::from("");
 
@@ -74,6 +84,7 @@ impl GPG {
             None,
             None,
             false,
+            false,
             Operation::Verify,
         );
 
@@ -104,6 +115,9 @@ impl GPG {
         args: HashMap<String, String>,
         passphrase: Option<String>,
     ) -> Result<CmdResult, GPGError> {
+        // args: a hashmap of arguments to generate the type of key, if not provided, it will generate a default key of
+        // passphrase: a passphrase for the key ( was used to protect the private key and will need during operation like decrypt )
+
         let input: String = self.gen_key_input(args, passphrase.clone());
         let args: Vec<String> = vec!["--gen-key".to_string()];
         let result: Result<CmdResult, GPGError> = handle_cmd_io(
@@ -118,6 +132,7 @@ impl GPG {
             None,
             Some(input.as_bytes().to_vec()),
             true,
+            false,
             Operation::GenerateKey,
         );
         return result;
@@ -176,11 +191,15 @@ impl GPG {
     }
 
     pub fn list_keys(
-        & self,
+        &self,
         secret: bool,
         keys: Option<Vec<String>>,
         signature: bool,
     ) -> Result<Vec<ListKeyResult>, GPGError> {
+        // secret: if true, list secret keys
+        // keys: list of keyid(s) to match
+        // sigs: if true, include signatures
+
         let mut mode: String = "keys".to_string();
         let mut args: Vec<String> = vec![
             format!("--list-{}", mode),
@@ -200,7 +219,7 @@ impl GPG {
         if keys.is_some() {
             args.append(&mut keys.unwrap());
         }
-        let result = handle_cmd_io(
+        let result: Result<CmdResult, GPGError> = handle_cmd_io(
             Some(args),
             None,
             self.version,
@@ -212,6 +231,7 @@ impl GPG {
             None,
             None,
             false,
+            false,
             Operation::ListKey,
         );
         match result {
@@ -222,6 +242,188 @@ impl GPG {
                 return Err(e);
             }
         }
+    }
+
+    pub fn encrypt(
+        &self,
+        file: Option<File>,
+        file_path: Option<String>,
+        receipients: Option<Vec<String>>,
+        sign: bool,
+        sign_key: Option<String>,
+        symmetric: bool,
+        symmetric_algo: Option<String>,
+        always_trust: bool,
+        passphrase: Option<String>,
+        armor: bool,
+        output: Option<String>,
+        extra_args: Option<Vec<String>>,
+    ) -> Result<CmdResult, GPGError> {
+        // file: file object
+        // file_path: path to file
+        // receipients: list of receipients keyid
+        // sign: whether to sign the file
+        // sign_key: keyid to sign the file
+        // symmetric: whether to encrypt symmetrically ( will not encrypt using keyid(s)) [passphrase must be provided if symmetric is true]
+        // symmetric_algo: symmetric algorithm to use [if not provided a highly ranked cipher willl be chosen]
+        // always_trust: whether to always trust keys
+        // passphrase: passphrase to use for symmetric encryption [required if symmetric is true]
+        // armor: whether to ASCII-armor the output
+        // output: path to write the encrypted output,
+        //         will use the default output dir with file name as [encrypted_file_<datetime>.<extension>] set in GPG if not provided
+        // extra_args: extra arguments to pass to gpg
+
+        let p = passphrase.clone();
+        if p.is_some() {
+            if !is_passphrase_valid(p.as_ref().unwrap()) {
+                return Err(GPGError::new(
+                    GPGErrorType::PassphraseError("passphrase invalid".to_string()),
+                    None,
+                ));
+            }
+        }
+
+        // generate encrypt operation arguments for gpg
+        let args: Result<Vec<String>, GPGError> = self.gen_encrypt_args(
+            file_path.clone(),
+            receipients,
+            sign,
+            sign_key,
+            symmetric,
+            symmetric_algo,
+            always_trust,
+            passphrase,
+            armor,
+            output,
+            extra_args,
+        );
+
+        match args {
+            Ok(_) => {}
+            Err(e) => {
+                return Err(e);
+            }
+        }
+
+        let result: Result<CmdResult, GPGError> = handle_cmd_io(
+            Some(args.unwrap()),
+            p,
+            self.version,
+            self.homedir.clone(),
+            self.use_agent,
+            self.options.clone(),
+            self.env.clone(),
+            file,
+            file_path,
+            None,
+            true,
+            true,
+            Operation::Encrypt,
+        );
+
+        match result {
+            Ok(result) => {
+                return Ok(result);
+            }
+            Err(e) => {
+                return Err(e);
+            }
+        }
+    }
+
+    fn gen_encrypt_args(
+        &self,
+        file_path: Option<String>,
+        receipients: Option<Vec<String>>,
+        sign: bool,
+        sign_key: Option<String>,
+        symmetric: bool,
+        symmetric_algo: Option<String>,
+        always_trust: bool,
+        passphrase: Option<String>,
+        armor: bool,
+        output: Option<String>,
+        extra_args: Option<Vec<String>>,
+    ) -> Result<Vec<String>, GPGError> {
+        let mut args: Vec<String> = vec!["--encrypt".to_string()];
+
+        if symmetric {
+            args = vec!["--symmetric".to_string()];
+            if passphrase.is_none() {
+                return Err(GPGError::new(
+                    GPGErrorType::PassphraseError(
+                        "passphrase is required if encrypting symmetrically ".to_string(),
+                    ),
+                    None,
+                ));
+            }
+            if symmetric_algo.is_some() {
+                args.append(&mut vec![
+                    "--personal-cipher-preferences".to_string(),
+                    symmetric_algo.unwrap(),
+                ]);
+            }
+        } else {
+            if receipients.is_none() {
+                return Err(GPGError::new(
+                    GPGErrorType::InvalidArgumentError("receipients is required".to_string()),
+                    None,
+                ));
+            }
+            for receipient in receipients.unwrap() {
+                args.append(&mut vec!["--recipient".to_string(), receipient]);
+            }
+        }
+
+        if armor {
+            args.push("--armor".to_string());
+        }
+        if output.is_some() {
+            set_output_without_confirmation(&mut args, &output.unwrap());
+        } else {
+            // if the system is handling the output
+            // the name wil be [<encryption_type>_encrypted_file_<YYYYMMDD_HH/MM/SS/NANO-SECOND>.<extension>]
+            // the encryption type will either [key] for public key encryption or [pass] for symmetric encryption
+            // the extension will be the same if file_path is provided,
+            // if a rust File type is provided, the name will be extension will be default to gpg
+
+            let ext: String = get_file_extension(file_path);
+            let time_stamp: String = Local::now().format("%Y%m%d-%H:%M:%S:%9f").to_string();
+            let out: String = format!(
+                "{}{}_encrypted_file_{}.{}",
+                self.output_dir.clone(),
+                if symmetric {
+                    "pass".to_string()
+                } else {
+                    "key".to_string()
+                },
+                time_stamp,
+                ext
+            );
+            args.append(&mut vec!["--output".to_string(), out]);
+        }
+
+        if sign {
+            if sign_key.is_some() {
+                args.append(&mut vec![
+                    "--sign".to_string(),
+                    "--default-key".to_string(),
+                    sign_key.unwrap(),
+                ]);
+            } else {
+                args.push("--sign".to_string());
+            }
+        }
+
+        if always_trust {
+            args.append(&mut vec!["--trust-model".to_string(), "always".to_string()]);
+        }
+
+        if extra_args.is_some() {
+            args.append(&mut extra_args.unwrap());
+        }
+
+        return Ok(args);
     }
 
     pub fn set_use_agent(&mut self) {

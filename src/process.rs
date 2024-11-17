@@ -29,6 +29,7 @@ pub fn handle_cmd_io(
     file_path: Option<String>,
     byte_input: Option<Vec<u8>>,
     write: bool,
+    file_needed: bool,
     ops: Operation,
 ) -> Result<CmdResult, GPGError> {
     let mut write_thread: Option<JoinHandle<()>> = None;
@@ -63,7 +64,10 @@ pub fn handle_cmd_io(
             Ok(file) => {
                 write_thread = Some(start_writing_process(Some(file), byte_input, stdin));
             }
-            Err(_) => {
+            Err(err) => {
+                if file_needed {
+                    return Err(err);
+                }
                 write_thread = Some(start_writing_process(None, byte_input, stdin));
             }
         }
@@ -280,7 +284,6 @@ fn write_to_stdin(
     byte_input: Option<Vec<u8>>,
     mut stdin: ChildStdin,
 ) -> Result<(), GPGError> {
-    // TODO: implement write input, file or both to stdin
     match byte_input {
         Some(byte_input) => {
             let r: Result<(), Error> = stdin.write_all(&byte_input);
@@ -335,20 +338,4 @@ fn write_to_stdin(
     drop(stdin);
 
     return Ok(());
-}
-
-fn write_passphrase(passphrase: String, stdin: &mut ChildStdin) -> Result<(), GPGError> {
-    let r: Result<(), Error> = stdin.write_all(passphrase.as_bytes());
-    match r {
-        Ok(_) => {
-            let _ = stdin.write_all(b"\n");
-            return Ok(());
-        }
-        Err(_) => {
-            return Err(GPGError::new(
-                GPGErrorType::PassphraseError("Failed to enter passphrase".to_string()),
-                None,
-            ));
-        }
-    }
 }
