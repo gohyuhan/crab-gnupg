@@ -121,7 +121,6 @@ pub fn get_file_obj(file: Option<File>, file_path: Option<String>) -> Result<Fil
 }
 
 pub fn decode_list_key_result(result: CmdResult) -> Vec<ListKeyResult> {
-    println!("output: {:?}", result);
     let output_lines = result.get_raw_data().unwrap();
     let mut processed_keyword: Vec<String> = Vec::new();
     let mut r: ListKey = ListKey::init();

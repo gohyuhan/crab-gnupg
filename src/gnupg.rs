@@ -1,20 +1,26 @@
-use core::time;
 use std::collections::HashMap;
 use std::env;
 use std::fs::File;
 
 use chrono::Local;
 
-use crate::utils::errors::GPGErrorType;
-use crate::utils::response::{CmdResult, ListKeyResult, Operation};
-use crate::utils::utils::{
-    check_is_dir, get_file_extension, get_or_create_gpg_homedir, get_or_create_gpg_output_dir,
-    is_passphrase_valid, set_output_without_confirmation,
+use crate::process::handle_cmd_io;
+use crate::utils::{
+    errors::{GPGError, GPGErrorType},
+    response::{CmdResult, ListKeyResult, Operation},
+    utils::{
+        check_is_dir, decode_list_key_result, get_file_extension, get_gpg_version,
+        get_or_create_gpg_homedir, get_or_create_gpg_output_dir, is_passphrase_valid,
+        set_output_without_confirmation,
+    },
 };
-use crate::utils::utils::{decode_list_key_result, get_gpg_version};
-use crate::{process::handle_cmd_io, utils::errors::GPGError};
 
 /// a struct to represent a GPG object
+//*******************************************************
+
+//                 RELATED TO GPG
+
+//*******************************************************
 #[derive(Debug)]
 pub struct GPG {
     /// a path to a directory where the local key were at
@@ -109,6 +115,12 @@ impl GPG {
             }
         }
     }
+
+    //*******************************************************
+
+    //    FUNCTION BELOW RELATED TO GPG VARIOUS OPERATIONS
+
+    //*******************************************************
 
     pub fn gen_key(
         &self,
