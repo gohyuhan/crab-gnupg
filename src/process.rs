@@ -55,6 +55,7 @@ pub fn handle_cmd_io(
     match passphrase {
         Some(passphrase) => {
             let _ = stdin.write_all(passphrase.as_bytes());
+            let _ = stdin.write_all("\n".as_bytes());
         }
         None => {}
     }
@@ -154,7 +155,7 @@ pub fn start_process(
 
     // Pass the rest of the arguments to the command
     command.args(&cmd_args[1..]);
-
+    println!("cmd_args: {}", cmd_args.join(" "));
     if env.is_some() {
         for (key, value) in env.unwrap() {
             command.env(key, value);

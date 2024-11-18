@@ -122,6 +122,11 @@ impl GPG {
 
     //*******************************************************
 
+    //*******************************************************
+
+    //                   GENERATE KEY
+
+    //*******************************************************
     pub fn gen_key(
         &self,
         args: HashMap<String, String>,
@@ -202,6 +207,11 @@ impl GPG {
         return input;
     }
 
+    //*******************************************************
+
+    //                     LIST KEY
+
+    //*******************************************************
     pub fn list_keys(
         &self,
         secret: bool,
@@ -213,17 +223,17 @@ impl GPG {
         // sigs: if true, include signatures
 
         let mut mode: String = "keys".to_string();
-        let mut args: Vec<String> = vec![
-            format!("--list-{}", mode),
-            "--fingerprint".to_string(),
-            "--fingerprint".to_string(),
-        ]; // duplicate --fingerprint to get the subkeys FP as well
-
         if secret {
             mode = "secret-keys".to_string();
         } else if signature {
             mode = "sigs".to_string();
         }
+
+        let mut args: Vec<String> = vec![
+            format!("--list-{}", mode),
+            "--fingerprint".to_string(),
+            "--fingerprint".to_string(),
+        ]; // duplicate --fingerprint to get the subkeys FP as well
 
         if self.version >= 2.1 {
             args.push("--with-keygrip".to_string());
@@ -256,6 +266,11 @@ impl GPG {
         }
     }
 
+    //*******************************************************
+
+    //                 FILE ENCRYPTION
+
+    //*******************************************************
     pub fn encrypt(
         &self,
         file: Option<File>,
@@ -436,6 +451,105 @@ impl GPG {
         }
 
         return Ok(args);
+    }
+
+    //*******************************************************
+
+    //                   FILE DECRYPTION
+
+    //*******************************************************
+    pub fn decrypt(
+        &self,
+        file: Option<File>,
+        file_path: Option<String>,
+        receipients: Option<String>,
+        always_trust: bool,
+        passphrase: Option<String>,
+        output: Option<String>,
+        extra_args: Option<Vec<String>>,
+    ) -> Result<CmdResult, GPGError> {
+        let p = passphrase.clone();
+        if p.is_some() {
+            if !is_passphrase_valid(p.as_ref().unwrap()) {
+                return Err(GPGError::new(
+                    GPGErrorType::PassphraseError("passphrase invalid".to_string()),
+                    None,
+                ));
+            }
+        }
+        let args: Vec<String> = self.gen_decrypt_args(
+            file_path.clone(),
+            receipients,
+            always_trust,
+            output,
+            extra_args,
+        );
+
+        let result: Result<CmdResult, GPGError> = handle_cmd_io(
+            Some(args),
+            p,
+            self.version,
+            self.homedir.clone(),
+            self.use_agent,
+            self.options.clone(),
+            self.env.clone(),
+            file,
+            file_path,
+            None,
+            true,
+            true,
+            Operation::Decrypt,
+        );
+
+        match result {
+            Ok(result) => {
+                return Ok(result);
+            }
+            Err(e) => {
+                return Err(e);
+            }
+        }
+    }
+
+    pub fn gen_decrypt_args(
+        &self,
+        file_path: Option<String>,
+        receipients: Option<String>,
+        always_trust: bool,
+        output: Option<String>,
+        extra_args: Option<Vec<String>>,
+    ) -> Vec<String> {
+        let mut args: Vec<String> = vec!["--decrypt".to_string()];
+        if receipients.is_some() {
+            args.append(&mut vec!["--recipient".to_string(), receipients.unwrap()]);
+        }
+        if always_trust {
+            args.append(&mut vec!["--trust-model".to_string(), "always".to_string()]);
+        }
+        if output.is_some() {
+            set_output_without_confirmation(&mut args, &output.unwrap());
+        } else {
+            // if the system is handling the output
+            // the name wil be [<encryption_type>_encrypted_file_<YYYYMMDD_HH/MM/SS/NANO-SECOND>.<extension>]
+            // the encryption type will either [key] for public key encryption or [pass] for symmetric encryption
+            // the extension will be the same if file_path is provided,
+            // if a rust File type is provided, the name will be extension will be default to gpg
+
+            let ext: String = get_file_extension(file_path);
+            let time_stamp: String = Local::now().format("%Y%m%d-%H:%M:%S:%9f").to_string();
+            let out: String = format!(
+                "{}decrypted_file_{}.{}",
+                self.output_dir.clone(),
+                time_stamp,
+                ext
+            );
+            args.append(&mut vec!["--output".to_string(), out]);
+        }
+
+        if extra_args.is_some() {
+            args.append(&mut extra_args.unwrap());
+        }
+        return args;
     }
 
     pub fn set_use_agent(&mut self) {

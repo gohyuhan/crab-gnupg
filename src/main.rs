@@ -24,28 +24,39 @@ fn main() {
 
     // NOTE:  LIST KEYS
 
-    // let result = gpg.list_keys(false, None, false);
-    // println!("{:?}", result.unwrap());
-    // println!("GPG:  {:?}", gpg);
+    let result = gpg.list_keys(true, None, false);
+    println!("GPG:  {:?}", gpg);
 
+    let key_id: String = result.unwrap()[0].keyid.clone();
     // NOTE:  ENCRYPT
 
     let result = gpg.encrypt(
         None,
-        Some("/Users/gohyuhan/crab-gnupg/test.txt".to_string()),
+        Some("/Users/gohyuhan/gnupg/output/test.txt".to_string()),
         Some(vec![
-            "D6DD040DBA05F474".to_string(),
-            "E6FC15EB4B28E6B6".to_string(),
+            key_id.clone(),
         ]),
-        false,
-        // Some("D6DD040DBA05F474".to_string()),
-        None,
-        false,
-        None,
+        true,
+        Some(key_id.clone()),
         true,
         None,
-        false,
+        true,
+        Some("1234".to_string()),
+        true,
+        Some("/Users/gohyuhan/gnupg/output/encrypted.txt".to_string()),
         None,
+    );
+    println!("{:?}", result);
+
+    // NOTE:  DECRYPT
+
+    let result = gpg.decrypt(
+        None,
+        Some("/Users/gohyuhan/gnupg/output/encrypted.txt".to_string()),
+        Some(key_id),
+        false,
+        Some("1234".to_string()),
+        Some("/Users/gohyuhan/gnupg/output/decrypted.txt".to_string()),
         None,
     );
     println!("{:?}", result);
