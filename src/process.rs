@@ -27,7 +27,6 @@ pub fn handle_cmd_io(
     passphrase: Option<String>,
     version: f32,
     homedir: String,
-    use_agent: bool,
     options: Option<Vec<String>>,
     env: Option<HashMap<String, String>>,
     file: Option<File>,
@@ -43,7 +42,6 @@ pub fn handle_cmd_io(
         passphrase.clone(),
         version,
         homedir,
-        use_agent,
         options,
         env,
     );
@@ -96,7 +94,6 @@ fn generate_cmd_args(
     passphrase: Option<String>,
     version: f32,
     homedir: String,
-    use_agent: bool,
     options: Option<Vec<String>>,
 ) -> Vec<String> {
     // cmd_args: a list of arguments to be passed to gpg
@@ -127,9 +124,6 @@ fn generate_cmd_args(
     if passphrase.is_some() {
         args.append(&mut vec!["--passphrase-fd".to_string(), "0".to_string()]);
     }
-    if use_agent {
-        args.push("--use-agent".to_string());
-    }
     if options.is_some() {
         args.append(&mut options.unwrap());
     }
@@ -143,24 +137,16 @@ pub fn start_process(
     passphrase: Option<String>,
     version: f32,
     homedir: String,
-    use_agent: bool,
     options: Option<Vec<String>>,
     env: Option<HashMap<String, String>>,
 ) -> Result<Child, Error> {
-    let cmd_args: Vec<String> = generate_cmd_args(
-        cmd_args,
-        passphrase,
-        version,
-        homedir.clone(),
-        use_agent,
-        options,
-    );
+    let cmd_args: Vec<String> =
+        generate_cmd_args(cmd_args, passphrase, version, homedir.clone(), options);
 
     let mut command = Command::new(&cmd_args[0]); // The first element of the vector is the command
 
     // Pass the rest of the arguments to the command
     command.args(&cmd_args[1..]);
-    println!("cmd_args: {}", cmd_args.join(" "));
     if env.is_some() {
         for (key, value) in env.unwrap() {
             command.env(key, value);
@@ -267,7 +253,6 @@ fn read_cmd_response(mut stderr: ChildStderr, result: Arc<Mutex<&mut CmdResult>>
             }
         }
     }
-    println!("response_lines: \n {}", data);
     drop(stderr);
 }
 

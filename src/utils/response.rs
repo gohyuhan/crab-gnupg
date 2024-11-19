@@ -312,7 +312,9 @@ impl ListKey {
     }
 
     pub fn append_result(&mut self) {
-        let curkey = self.curkey.as_ref().unwrap().clone();
-        self.key_list.as_mut().unwrap().push(curkey);
+        if !self.curkey.is_none() {
+            let curkey = self.curkey.as_ref().unwrap().clone();
+            self.key_list.as_mut().unwrap().push(curkey);
+        }
     }
 }

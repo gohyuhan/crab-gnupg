@@ -34,8 +34,6 @@ pub struct GPG {
     keyrings: Option<Vec<String>>,
     /// a list of name of secret keyring files to use.
     secret_keyring: Option<Vec<String>>,
-    /// the --use-agent parameter is passed to gpg when set to true
-    use_agent: bool,
     /// additional arguments to be passed to gpg
     options: Option<Vec<String>>,
     /// the major minor version of gpg, should only be set by system, user should not set this ex) 2.4
@@ -84,7 +82,6 @@ impl GPG {
             None,
             0.0,
             h_d.clone(),
-            false,
             None,
             None,
             None,
@@ -97,7 +94,6 @@ impl GPG {
 
         match result {
             Ok(result) => {
-                println!("{:?}", result);
                 let version: (f32, String) = get_gpg_version(&result);
                 return Ok(GPG {
                     homedir: h_d,
@@ -105,7 +101,6 @@ impl GPG {
                     env: None,
                     keyrings: None,
                     secret_keyring: None,
-                    use_agent: false,
                     options: None,
                     version: version.0,
                     full_version: version.1,
@@ -130,20 +125,28 @@ impl GPG {
     //*******************************************************
     pub fn gen_key(
         &self,
-        args: HashMap<String, String>,
-        passphrase: Option<String>,
+        args: Option<HashMap<String, String>>,
+        key_passphrase: Option<String>,
     ) -> Result<CmdResult, GPGError> {
         // args: a hashmap of arguments to generate the type of key, if not provided, it will generate a default key of
         // passphrase: a passphrase for the key ( was used to protect the private key and will need during operation like decrypt )
 
-        let input: String = self.gen_key_input(args, passphrase.clone());
+        let k_p = key_passphrase.clone();
+        if k_p.is_some() {
+            if !is_passphrase_valid(k_p.as_ref().unwrap()) {
+                return Err(GPGError::new(
+                    GPGErrorType::PassphraseError("key passphrase invalid".to_string()),
+                    None,
+                ));
+            }
+        }
+        let input: String = self.gen_key_input(args, key_passphrase.clone());
         let args: Vec<String> = vec!["--gen-key".to_string()];
         let result: Result<CmdResult, GPGError> = handle_cmd_io(
             Some(args),
-            passphrase,
+            key_passphrase,
             self.version,
             self.homedir.clone(),
-            self.use_agent,
             self.options.clone(),
             self.env.clone(),
             None,
@@ -156,7 +159,11 @@ impl GPG {
         return result;
     }
 
-    fn gen_key_input(&self, args: HashMap<String, String>, passphrase: Option<String>) -> String {
+    fn gen_key_input(
+        &self,
+        args: Option<HashMap<String, String>>,
+        passphrase: Option<String>,
+    ) -> String {
         // generate the input we need to pass to gpg to generate a key
 
         // Key-Type: DSA
@@ -171,8 +178,10 @@ impl GPG {
         // %commit
 
         let mut params: HashMap<String, String> = HashMap::new();
-        for (key, value) in args.iter() {
-            params.insert(key.replace("_", "-").to_string(), value.trim().to_string());
+        if args.is_some() {
+            for (key, value) in args.unwrap().iter() {
+                params.insert(key.replace("_", "-").to_string(), value.trim().to_string());
+            }
         }
         params
             .entry("Key-Type".to_string())
@@ -247,7 +256,6 @@ impl GPG {
             None,
             self.version,
             self.homedir.clone(),
-            self.use_agent,
             self.options.clone(),
             self.env.clone(),
             None,
@@ -276,7 +284,7 @@ impl GPG {
         &self,
         file: Option<File>,
         file_path: Option<String>,
-        receipients: Option<Vec<String>>,
+        recipients: Option<Vec<String>>,
         sign: bool,
         sign_key: Option<String>,
         symmetric: bool,
@@ -293,6 +301,7 @@ impl GPG {
         // sign: whether to sign the file
         // sign_key: keyid to sign the file
         // symmetric: whether to encrypt symmetrically ( will not encrypt using keyid(s)) [passphrase must be provided if symmetric is true]
+        //             the file will be both encrypted with the keyid(s) and symmetrically
         // symmetric_algo: symmetric algorithm to use [if not provided a highly ranked cipher willl be chosen]
         // always_trust: whether to always trust keys
         // passphrase: passphrase to use for symmetric encryption [required if symmetric is true]
@@ -301,7 +310,23 @@ impl GPG {
         //         will use the default output dir with file name as [encrypted_file_<datetime>.<extension>] set in GPG if not provided
         // extra_args: extra arguments to pass to gpg
 
+        //*****************************************************************************************
+        //    NOTE: If signing with a passphrase-protected key,
+        //          an error will occur.
+        //          Please sign separately after encryption.
+        //
+        //    Reason:
+        //           We stream all input to GPG through STDIN.
+        //           When signing with a passphrase-protected key,
+        //           GPG expects the passphrase to be entered after the file content.
+        //           However, since we are streaming input through STDIN,
+        //           it's impossible to distinguish between file content and the passphrase input.
+        //           As a result, the passphrase is mistakenly treated as part of the file data,
+        //           causing the signing process to fail for passphrase protected key.
+        //******************************************************************************************
+
         let p = passphrase.clone();
+
         if p.is_some() {
             if !is_passphrase_valid(p.as_ref().unwrap()) {
                 return Err(GPGError::new(
@@ -314,7 +339,7 @@ impl GPG {
         // generate encrypt operation arguments for gpg
         let args: Result<Vec<String>, GPGError> = self.gen_encrypt_args(
             file_path.clone(),
-            receipients,
+            recipients,
             sign,
             sign_key,
             symmetric,
@@ -338,7 +363,6 @@ impl GPG {
             p,
             self.version,
             self.homedir.clone(),
-            self.use_agent,
             self.options.clone(),
             self.env.clone(),
             file,
@@ -362,7 +386,7 @@ impl GPG {
     fn gen_encrypt_args(
         &self,
         file_path: Option<String>,
-        receipients: Option<Vec<String>>,
+        recipients: Option<Vec<String>>,
         sign: bool,
         sign_key: Option<String>,
         symmetric: bool,
@@ -373,10 +397,13 @@ impl GPG {
         output: Option<String>,
         extra_args: Option<Vec<String>>,
     ) -> Result<Vec<String>, GPGError> {
-        let mut args: Vec<String> = vec!["--encrypt".to_string()];
+        let mut args: Vec<String> = vec![];
 
         if symmetric {
-            args = vec!["--symmetric".to_string()];
+            args.append(&mut vec![
+                "--symmetric".to_string(),
+                "--no-symkey-cache".to_string(),
+            ]);
             if passphrase.is_none() {
                 return Err(GPGError::new(
                     GPGErrorType::PassphraseError(
@@ -391,16 +418,21 @@ impl GPG {
                     symmetric_algo.unwrap(),
                 ]);
             }
-        } else {
-            if receipients.is_none() {
-                return Err(GPGError::new(
-                    GPGErrorType::InvalidArgumentError("receipients is required".to_string()),
-                    None,
-                ));
+        }
+        if recipients.is_some() {
+            args.push("--encrypt".to_string());
+            for recipient in recipients.unwrap() {
+                args.append(&mut vec!["--recipient".to_string(), recipient]);
             }
-            for receipient in receipients.unwrap() {
-                args.append(&mut vec!["--recipient".to_string(), receipient]);
-            }
+        }
+
+        if args.len() == 0 {
+            return Err(GPGError::new(
+                GPGErrorType::InvalidArgumentError(
+                    "Please choose symmetric or keys to encrypt your file".to_string(),
+                ),
+                None,
+            ));
         }
 
         if armor {
@@ -463,24 +495,48 @@ impl GPG {
         &self,
         file: Option<File>,
         file_path: Option<String>,
-        receipients: Option<String>,
+        recipients: Option<String>,
         always_trust: bool,
         passphrase: Option<String>,
+        key_passphrase: Option<String>,
         output: Option<String>,
         extra_args: Option<Vec<String>>,
     ) -> Result<CmdResult, GPGError> {
+        // file: file object
+        // file_path: path to file
+        // recipients: list of recipients keyid
+        // always_trust: whether to always trust keys
+        // passphrase: passphrase if file if symmetric encrypted [required if it was symmetric encrypted]
+        // key_passphrase: passphrase if file is key encrypted and need passphrase protected private key to decrypt
+        // output: path to write the decrypted output,
+        //         will use the default output dir with file name as [decrypted_file_<datetime>.<extension>] set in GPG if not provided
+        // extra_args: extra arguments to pass to gpg
+
+        let k_p = key_passphrase.clone();
         let p = passphrase.clone();
-        if p.is_some() {
+        let mut pass: Option<String> = None;
+
+        if k_p.is_some() {
+            if !is_passphrase_valid(k_p.as_ref().unwrap()) {
+                return Err(GPGError::new(
+                    GPGErrorType::PassphraseError("key passphrase invalid".to_string()),
+                    None,
+                ));
+            }
+            pass = k_p;
+        } else if p.is_some() {
             if !is_passphrase_valid(p.as_ref().unwrap()) {
                 return Err(GPGError::new(
                     GPGErrorType::PassphraseError("passphrase invalid".to_string()),
                     None,
                 ));
             }
+            pass = p;
         }
+
         let args: Vec<String> = self.gen_decrypt_args(
             file_path.clone(),
-            receipients,
+            recipients,
             always_trust,
             output,
             extra_args,
@@ -488,10 +544,9 @@ impl GPG {
 
         let result: Result<CmdResult, GPGError> = handle_cmd_io(
             Some(args),
-            p,
+            if pass.is_some() { pass } else { None },
             self.version,
             self.homedir.clone(),
-            self.use_agent,
             self.options.clone(),
             self.env.clone(),
             file,
@@ -515,14 +570,14 @@ impl GPG {
     pub fn gen_decrypt_args(
         &self,
         file_path: Option<String>,
-        receipients: Option<String>,
+        recipients: Option<String>,
         always_trust: bool,
         output: Option<String>,
         extra_args: Option<Vec<String>>,
     ) -> Vec<String> {
         let mut args: Vec<String> = vec!["--decrypt".to_string()];
-        if receipients.is_some() {
-            args.append(&mut vec!["--recipient".to_string(), receipients.unwrap()]);
+        if recipients.is_some() {
+            args.append(&mut vec!["--recipient".to_string(), recipients.unwrap()]);
         }
         if always_trust {
             args.append(&mut vec!["--trust-model".to_string(), "always".to_string()]);
@@ -551,14 +606,6 @@ impl GPG {
             args.append(&mut extra_args.unwrap());
         }
         return args;
-    }
-
-    pub fn set_use_agent(&mut self) {
-        self.use_agent = true;
-    }
-
-    pub fn set_not_use_agent(&mut self) {
-        self.use_agent = true;
     }
 
     pub fn set_option(&mut self, options: Vec<String>) {
