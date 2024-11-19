@@ -8,14 +8,19 @@ use std::{
 };
 
 use crate::utils::{
+    enums::Operation,
     errors::{GPGError, GPGErrorType},
     response::CmdResult,
-    response::Operation,
     utils::get_file_obj,
 };
 
 const BUFFER_SIZE: usize = 8192;
 
+//*******************************************************
+
+//             RELATED TO COMMAND PROCESS
+
+//*******************************************************
 /// a centralized function to spawn Command and handle its IO
 pub fn handle_cmd_io(
     cmd_args: Option<Vec<String>>,

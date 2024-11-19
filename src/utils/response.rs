@@ -1,11 +1,12 @@
-use std::fmt::{Display, Formatter};
+use super::enums::Operation;
 
-/// a result handler for command process output/error result
 //*******************************************************
 
 //            RELATED TO RESPONSE HANDLING
 
 //*******************************************************
+
+/// a result handler for command process output/error result
 #[derive(Debug, Clone)]
 pub struct CmdResult {
     raw_data: Option<String>,
@@ -313,30 +314,5 @@ impl ListKey {
     pub fn append_result(&mut self) {
         let curkey = self.curkey.as_ref().unwrap().clone();
         self.key_list.as_mut().unwrap().push(curkey);
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum Operation {
-    NotSet,
-    Verify,
-    GenerateKey,
-    ListKey,
-    SearchKey,
-    Encrypt,
-    Decrypt,
-}
-
-impl Display for Operation {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Operation::NotSet => write!(f, "NotSet"),
-            Operation::Verify => write!(f, "Verify"),
-            Operation::GenerateKey => write!(f, "GenerateKey"),
-            Operation::ListKey => write!(f, "ListKey"),
-            Operation::SearchKey => write!(f, "SearchKey"),
-            Operation::Encrypt => write!(f, "Encrypt"),
-            Operation::Decrypt => write!(f, "Decrypt"),
-        }
     }
 }

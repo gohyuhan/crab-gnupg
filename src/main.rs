@@ -33,9 +33,7 @@ fn main() {
     let result = gpg.encrypt(
         None,
         Some("/Users/gohyuhan/gnupg/output/test.txt".to_string()),
-        Some(vec![
-            key_id.clone(),
-        ]),
+        Some(vec![key_id.clone()]),
         true,
         Some(key_id.clone()),
         true,

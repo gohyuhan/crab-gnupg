@@ -5,9 +5,10 @@ use std::fs::File;
 use chrono::Local;
 
 use crate::process::handle_cmd_io;
+use crate::utils::enums::Operation;
 use crate::utils::{
     errors::{GPGError, GPGErrorType},
-    response::{CmdResult, ListKeyResult, Operation},
+    response::{CmdResult, ListKeyResult},
     utils::{
         check_is_dir, decode_list_key_result, get_file_extension, get_gpg_version,
         get_or_create_gpg_homedir, get_or_create_gpg_output_dir, is_passphrase_valid,
