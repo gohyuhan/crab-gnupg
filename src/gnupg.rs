@@ -426,7 +426,7 @@ impl GPG {
             // the name wil be [<encryption_type>_encrypted_file_<YYYYMMDD_HH/MM/SS/NANO-SECOND>.<extension>]
             // the encryption type will either [key] for public key encryption or [pass] for symmetric encryption or both
             // the extension will be the same if file_path is provided,
-            // if a rust File type is provided, the name will be extension will be default to gpg
+            // if a rust File type is provided, the file extension will be default to .gpg
 
             let ext: String = get_file_extension(file_path);
             let time_stamp: String = Local::now().format("%Y%m%d-%H:%M:%S:%9f").to_string();
@@ -687,7 +687,7 @@ impl EncryptOption {
         };
     }
 
-    // for with_symmetric, it will be a encryption with both passphrase and keys and always trust will be true
+    // for with_key_and_symmetric, it will be a encryption with both passphrase and keys and always trust will be true
     pub fn with_key_and_symmetric(
         file: Option<File>,
         file_path: Option<String>,
