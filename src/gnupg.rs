@@ -23,6 +23,7 @@ use crate::utils::{
 
 //*******************************************************
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct GPG {
     /// a path to a directory where the local key were at
     homedir: String,
@@ -36,6 +37,8 @@ pub struct GPG {
     secret_keyring: Option<Vec<String>>,
     /// additional arguments to be passed to gpg
     options: Option<Vec<String>>,
+    /// a boolean to indicate if the output should be armored
+    armor: bool,
     /// the major minor version of gpg, should only be set by system, user should not set this ex) 2.4
     version: f32,
     /// the full version of gpg, should only be set by system, user should not set this ex) 2.4.6
@@ -44,21 +47,22 @@ pub struct GPG {
 
 impl GPG {
     /// initialize a GPG object with a homedir and an output_dir or none (system set homedir and output dir)
-    pub fn init(homedir: Option<String>, output_dir: Option<String>) -> Result<GPG, GPGError> {
+    pub fn init(
+        homedir: Option<String>,
+        output_dir: Option<String>,
+        armor: bool,
+    ) -> Result<GPG, GPGError> {
         // homedir: a path to a directory where the local key were at
         // output_dir: a path to a directory where the output files from gpg will save to
+        // a boolean to indicate if the output should be armored
 
-        let mut h_d: String = String::from("");
-        let mut o_d: String = String::from("");
+        let mut h_d: String = homedir.unwrap_or(String::new());
+        let mut o_d: String = output_dir.unwrap_or(String::new());
 
-        if homedir.is_some() {
-            h_d = homedir.unwrap();
-        } else {
+        if h_d.is_empty() {
             h_d = get_or_create_gpg_homedir();
         }
-        if output_dir.is_some() {
-            o_d = output_dir.unwrap();
-        } else {
+        if o_d.is_empty() {
             o_d = get_or_create_gpg_output_dir();
         }
 
@@ -102,6 +106,7 @@ impl GPG {
                     keyrings: None,
                     secret_keyring: None,
                     options: None,
+                    armor: armor,
                     version: version.0,
                     full_version: version.1,
                 });
@@ -125,11 +130,11 @@ impl GPG {
     //*******************************************************
     pub fn gen_key(
         &self,
-        args: Option<HashMap<String, String>>,
         key_passphrase: Option<String>,
+        args: Option<HashMap<String, String>>,
     ) -> Result<CmdResult, GPGError> {
-        // args: a hashmap of arguments to generate the type of key, if not provided, it will generate a default key of
-        // passphrase: a passphrase for the key ( was used to protect the private key and will need during operation like decrypt )
+        // passphrase: a passphrase for the key ( was used to protect the private key and will be needed during operation like decrypt )
+        // args: a hashmap of arguments to generate the type of key, if not provided, it will generate a default key of type RSA with key length of 2048
 
         let k_p = key_passphrase.clone();
         if k_p.is_some() {
@@ -166,6 +171,7 @@ impl GPG {
     ) -> String {
         // generate the input we need to pass to gpg to generate a key
 
+        //******************* EXAMPLE ************************
         // Key-Type: DSA
         // Key-Length: 1024
         // Subkey-Type: ELG-E
@@ -176,6 +182,7 @@ impl GPG {
         // Expire-Date: 0
         // %no-protection
         // %commit
+        //*****************************************************
 
         let mut params: HashMap<String, String> = HashMap::new();
         if args.is_some() {
@@ -280,40 +287,13 @@ impl GPG {
     //                 FILE ENCRYPTION
 
     //*******************************************************
-    pub fn encrypt(
-        &self,
-        file: Option<File>,
-        file_path: Option<String>,
-        recipients: Option<Vec<String>>,
-        sign: bool,
-        sign_key: Option<String>,
-        symmetric: bool,
-        symmetric_algo: Option<String>,
-        always_trust: bool,
-        passphrase: Option<String>,
-        armor: bool,
-        output: Option<String>,
-        extra_args: Option<Vec<String>>,
-    ) -> Result<CmdResult, GPGError> {
-        // file: file object
-        // file_path: path to file
-        // receipients: list of receipients keyid
-        // sign: whether to sign the file
-        // sign_key: keyid to sign the file
-        // symmetric: whether to encrypt symmetrically ( will not encrypt using keyid(s)) [passphrase must be provided if symmetric is true]
-        //             the file will be both encrypted with the keyid(s) and symmetrically
-        // symmetric_algo: symmetric algorithm to use [if not provided a highly ranked cipher willl be chosen]
-        // always_trust: whether to always trust keys
-        // passphrase: passphrase to use for symmetric encryption [required if symmetric is true]
-        // armor: whether to ASCII-armor the output
-        // output: path to write the encrypted output,
-        //         will use the default output dir with file name as [encrypted_file_<datetime>.<extension>] set in GPG if not provided
-        // extra_args: extra arguments to pass to gpg
-
+    /// to encrypt file, use the EncryptionOption struct to create the encryption options
+    pub fn encrypt(&self, encryption_option: EncryptOption) -> Result<CmdResult, GPGError> {
         //*****************************************************************************************
         //    NOTE: If signing with a passphrase-protected key,
         //          an error will occur.
-        //          Please sign separately after encryption.
+        //          Please sign separately after encryption if using
+        //          passphrase-protected key.
         //
         //    Reason:
         //           We stream all input to GPG through STDIN.
@@ -325,7 +305,7 @@ impl GPG {
         //           causing the signing process to fail for passphrase protected key.
         //******************************************************************************************
 
-        let p = passphrase.clone();
+        let p: Option<String> = encryption_option.passphrase.clone();
 
         if p.is_some() {
             if !is_passphrase_valid(p.as_ref().unwrap()) {
@@ -338,17 +318,16 @@ impl GPG {
 
         // generate encrypt operation arguments for gpg
         let args: Result<Vec<String>, GPGError> = self.gen_encrypt_args(
-            file_path.clone(),
-            recipients,
-            sign,
-            sign_key,
-            symmetric,
-            symmetric_algo,
-            always_trust,
-            passphrase,
-            armor,
-            output,
-            extra_args,
+            encryption_option.file_path.clone(),
+            encryption_option.recipients,
+            encryption_option.sign,
+            encryption_option.sign_key,
+            encryption_option.symmetric,
+            encryption_option.symmetric_algo,
+            encryption_option.always_trust,
+            encryption_option.passphrase,
+            encryption_option.output,
+            encryption_option.extra_args,
         );
 
         match args {
@@ -365,8 +344,8 @@ impl GPG {
             self.homedir.clone(),
             self.options.clone(),
             self.env.clone(),
-            file,
-            file_path,
+            encryption_option.file,
+            encryption_option.file_path,
             None,
             true,
             true,
@@ -393,11 +372,11 @@ impl GPG {
         symmetric_algo: Option<String>,
         always_trust: bool,
         passphrase: Option<String>,
-        armor: bool,
         output: Option<String>,
         extra_args: Option<Vec<String>>,
     ) -> Result<Vec<String>, GPGError> {
         let mut args: Vec<String> = vec![];
+        let mut encrypt_type: String = "".to_string();
 
         if symmetric {
             args.append(&mut vec![
@@ -418,12 +397,14 @@ impl GPG {
                     symmetric_algo.unwrap(),
                 ]);
             }
+            encrypt_type.push_str("pass_");
         }
         if recipients.is_some() {
             args.push("--encrypt".to_string());
             for recipient in recipients.unwrap() {
                 args.append(&mut vec!["--recipient".to_string(), recipient]);
             }
+            encrypt_type.push_str("keys_");
         }
 
         if args.len() == 0 {
@@ -435,7 +416,7 @@ impl GPG {
             ));
         }
 
-        if armor {
+        if self.armor {
             args.push("--armor".to_string());
         }
         if output.is_some() {
@@ -443,7 +424,7 @@ impl GPG {
         } else {
             // if the system is handling the output
             // the name wil be [<encryption_type>_encrypted_file_<YYYYMMDD_HH/MM/SS/NANO-SECOND>.<extension>]
-            // the encryption type will either [key] for public key encryption or [pass] for symmetric encryption
+            // the encryption type will either [key] for public key encryption or [pass] for symmetric encryption or both
             // the extension will be the same if file_path is provided,
             // if a rust File type is provided, the name will be extension will be default to gpg
 
@@ -452,11 +433,7 @@ impl GPG {
             let out: String = format!(
                 "{}{}_encrypted_file_{}.{}",
                 self.output_dir.clone(),
-                if symmetric {
-                    "pass".to_string()
-                } else {
-                    "key".to_string()
-                },
+                encrypt_type,
                 time_stamp,
                 ext
             );
@@ -491,6 +468,7 @@ impl GPG {
     //                   FILE DECRYPTION
 
     //*******************************************************
+    /// to encrypt file, use the DecryptionOption struct to create the decryption options
     pub fn decrypt(
         &self,
         file: Option<File>,
@@ -512,8 +490,8 @@ impl GPG {
         //         will use the default output dir with file name as [decrypted_file_<datetime>.<extension>] set in GPG if not provided
         // extra_args: extra arguments to pass to gpg
 
-        let k_p = key_passphrase.clone();
-        let p = passphrase.clone();
+        let k_p: Option<String> = key_passphrase.clone();
+        let p: Option<String> = passphrase.clone();
         let mut pass: Option<String> = None;
 
         if k_p.is_some() {
@@ -622,5 +600,114 @@ impl GPG {
 
     pub fn clear_env(&mut self) {
         self.env = None;
+    }
+}
+
+/// a struct to represent GPG Encryption Option
+/// use this to construct the options for GPG Encryption
+/// that will be pass to the encryption method
+//*******************************************************
+
+//         RELATED TO GPG ENCRYPTION OPTION
+
+//*******************************************************
+#[derive(Debug)]
+#[allow(dead_code)]
+pub struct EncryptOption {
+    // file: file object
+    file: Option<File>,
+    // file_path: path to file
+    file_path: Option<String>,
+    // receipients: list of receipients keyid
+    recipients: Option<Vec<String>>,
+    // sign: whether to sign the file
+    sign: bool,
+    // sign_key: keyid to sign the file
+    sign_key: Option<String>,
+    // symmetric: whether to encrypt symmetrically ( will not encrypt using keyid(s)) [passphrase must be provided if symmetric is true]
+    //             the file will be both encrypted with the keyid(s) and symmetrically
+    symmetric: bool,
+    // symmetric_algo: symmetric algorithm to use [if not provided a highly ranked cipher willl be chosen]
+    symmetric_algo: Option<String>,
+    // always_trust: whether to always trust keys
+    always_trust: bool,
+    // passphrase: passphrase to use for symmetric encryption [required if symmetric is true]
+    passphrase: Option<String>,
+    // output: path to write the encrypted output,
+    //         will use the default output dir set in GPG if not provided and
+    //         with file name as [<encryption_type>_encrypted_file_<datetime>.<extension>]
+    output: Option<String>,
+    // extra_args: extra arguments to pass to gpg
+    extra_args: Option<Vec<String>>,
+}
+
+impl EncryptOption {
+    // for default, it will be a encryption with just keys and always trust will be true
+    pub fn default(
+        file: Option<File>,
+        file_path: Option<String>,
+        recipients: Option<Vec<String>>,
+        output: Option<String>,
+    ) -> EncryptOption {
+        return EncryptOption {
+            file: file,
+            file_path: file_path,
+            recipients: recipients,
+            sign: false,
+            sign_key: None,
+            symmetric: false,
+            symmetric_algo: None,
+            always_trust: true,
+            passphrase: None,
+            output: output,
+            extra_args: None,
+        };
+    }
+
+    // for with_symmetric, it will be a encryption with passphrase instead of keys and always trust will be true
+    pub fn with_symmetric(
+        file: Option<File>,
+        file_path: Option<String>,
+        symmetric_algo: Option<String>,
+        passphrase: Option<String>,
+        output: Option<String>,
+    ) -> EncryptOption {
+        return EncryptOption {
+            file: file,
+            file_path: file_path,
+            recipients: None,
+            sign: false,
+            sign_key: None,
+            symmetric: true,
+            symmetric_algo: symmetric_algo,
+            always_trust: true,
+            passphrase: passphrase,
+            output: output,
+            extra_args: None,
+        };
+    }
+
+    // for with_symmetric, it will be a encryption with both passphrase and keys and always trust will be true
+    pub fn with_key_and_symmetric(
+        file: Option<File>,
+        file_path: Option<String>,
+        recipients: Option<Vec<String>>,
+        symmetric_algo: Option<String>,
+        passphrase: Option<String>,
+        output: Option<String>,
+    ) -> EncryptOption {
+        return EncryptOption {
+            file: file,
+            file_path: file_path,
+            recipients: recipients,
+            sign: false,
+            sign_key: None,
+            symmetric: true,
+            symmetric_algo: symmetric_algo,
+            always_trust: true,
+            passphrase: passphrase,
+            output: output,
+            extra_args: None,
+        };
     }
 }

@@ -80,11 +80,10 @@ pub fn get_gpg_version(result: &CmdResult) -> (f32, String) {
         if version.is_some() {
             let version_string = version.unwrap().get(1).unwrap().as_str().to_string();
             let version_clone: String = version_string.clone();
-            let mut version_float: f32 = 0.0;
             let v: Vec<&str> = version_clone.split(".").collect();
             let major_minor_v = format!("{}.{}", v[0], v[1]);
 
-            version_float = major_minor_v.parse::<f32>().unwrap();
+            let version_float: f32 = major_minor_v.parse::<f32>().unwrap_or(0.0);
 
             return (version_float, version_string);
         }

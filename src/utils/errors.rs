@@ -3,6 +3,7 @@ use std::fmt::{Display, Formatter};
 use super::response::CmdResult;
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct GPGError {
     // the type of error
     error_type: GPGErrorType,
