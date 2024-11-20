@@ -502,7 +502,7 @@ impl GPG {
 
         let result: Result<CmdResult, GPGError> = handle_cmd_io(
             Some(args),
-            if pass.is_some() { pass } else { None },
+            pass,
             self.version,
             self.homedir.clone(),
             self.options.clone(),
@@ -566,20 +566,97 @@ impl GPG {
         return args;
     }
 
-    pub fn set_option(&mut self, options: Vec<String>) {
-        self.options = Some(options);
+    //*******************************************************
+
+    //                   FILE SIGNING
+
+    //*******************************************************
+    pub fn sign(&self, sign_option: SignOption) -> Result<CmdResult, GPGError> {
+        if sign_option.key_passphrase.is_some() {
+            if !is_passphrase_valid(sign_option.key_passphrase.as_ref().unwrap()) {
+                return Err(GPGError::new(
+                    GPGErrorType::PassphraseError("passphrase invalid".to_string()),
+                    None,
+                ));
+            }
+        };
+        let args: Vec<String> = self.gen_sign_args(
+            sign_option.file_path.clone(),
+            sign_option.keyid.clone(),
+            sign_option.clearsign,
+            sign_option.detach,
+            sign_option.output,
+            sign_option.extra_args,
+        );
+
+        let result: Result<CmdResult, GPGError> = handle_cmd_io(
+            Some(args),
+            sign_option.key_passphrase,
+            self.version,
+            self.homedir.clone(),
+            self.options.clone(),
+            self.env.clone(),
+            sign_option.file,
+            sign_option.file_path,
+            None,
+            true,
+            true,
+            Operation::Sign,
+        );
+        match result {
+            Ok(result) => {
+                return Ok(result);
+            }
+            Err(e) => {
+                return Err(e);
+            }
+        }
     }
 
-    pub fn clear_option(&mut self) {
-        self.options = None;
-    }
+    fn gen_sign_args(
+        &self,
+        file_path: Option<String>,
+        keyid: Option<String>,
+        clearsign: bool,
+        detach: bool,
+        output: Option<String>,
+        extra_args: Option<Vec<String>>,
+    ) -> Vec<String> {
+        let mut args: Vec<String> = vec!["--sign".to_string()];
+        let time_stamp: String = Local::now().format("%Y%m%d-%H:%M:%S:%9f").to_string();
 
-    pub fn set_env(&mut self, env: HashMap<String, String>) {
-        self.env = Some(env);
-    }
+        if clearsign {
+            args.push("--clearsign".to_string());
+        };
+        if detach {
+            args.push("--detach-sign".to_string());
+            let extension = if self.armor { ".asc" } else { ".sig" };
+            let file_path: String = output.unwrap_or(format!(
+                "{}detach_sign_{}{}",
+                self.output_dir, time_stamp, extension
+            ));
+            set_output_without_confirmation(&mut args, &file_path);
+        } else {
+            let mut file_path: String = output.unwrap_or(file_path.unwrap_or(format!(
+                "{}embedded_sign_{}.gpg",
+                self.output_dir, time_stamp
+            )));
+            set_output_without_confirmation(&mut args, &file_path);
+        }
 
-    pub fn clear_env(&mut self) {
-        self.env = None;
+        if keyid.is_some() {
+            args.append(&mut vec!["--default-key".to_string(), keyid.unwrap()]);
+        };
+
+        if self.armor {
+            args.push("--armor".to_string());
+        }
+
+        if extra_args.is_some() {
+            args.append(&mut extra_args.unwrap());
+        }
+
+        return args;
     }
 }
 
@@ -605,7 +682,7 @@ pub struct EncryptOption {
     // sign_key: keyid to sign the file
     sign_key: Option<String>,
     // symmetric: whether to encrypt symmetrically ( will not encrypt using keyid(s)) [passphrase must be provided if symmetric is true]
-    //             the file will be both encrypted with the keyid(s) and symmetrically
+    //            the file will be both encrypted with the keyid(s) and symmetrically
     symmetric: bool,
     // symmetric_algo: symmetric algorithm to use [if not provided a highly ranked cipher willl be chosen]
     symmetric_algo: Option<String>,
@@ -758,6 +835,82 @@ impl DecryptOption {
             always_trust: true,
             passphrase: passphrase,
             key_passphrase: None,
+            output: output,
+            extra_args: None,
+        };
+    }
+}
+
+/// a struct to represent GPG Signing Option
+/// use this to construct the options for GPG Signing
+/// that will be pass to the signing method
+//*******************************************************
+
+//         RELATED TO GPG SIGNING OPTION
+
+//*******************************************************
+#[derive(Debug)]
+#[allow(dead_code)]
+pub struct SignOption {
+    // file: file object
+    file: Option<File>,
+    // file_path: path to file
+    file_path: Option<String>,
+    // recipients: keyid for signing
+    keyid: Option<String>,
+    // key_passphrase: required for passphrase protected private key
+    key_passphrase: Option<String>,
+    // clearsign: Whether to use clear signing
+    clearsign: bool,
+    // detach: Whether to produce a detached signature.
+    detach: bool,
+    // output: path to write the detached signature or embedded sign file
+    //         if output not specified:
+    //           for embedded sign file, will tend to use file_path ( will overwrite )
+    //           will use the default output dir with file name as [<sign_type>_<datetime>.<sig or gpg>] set in GPG if
+    //           file is provided instead of file_path or detached signature
+    output: Option<String>,
+    // extra_args: extra arguments to pass to gpg
+    extra_args: Option<Vec<String>>,
+}
+
+impl SignOption {
+    // for default, it will be an embedded signing with secret key with clearsign
+    // [key_passphrase is required for passphrase protected private key]
+    pub fn default(
+        file: Option<File>,
+        file_path: Option<String>,
+        keyid: Option<String>,
+        key_passphrase: Option<String>,
+        output: Option<String>,
+    ) -> SignOption {
+        return SignOption {
+            file: file,
+            file_path: file_path,
+            keyid: keyid,
+            key_passphrase: key_passphrase,
+            clearsign: true,
+            detach: false,
+            output: output,
+            extra_args: None,
+        };
+    }
+
+    // for detached, it will be a detached signing with secret key without clearsign
+    pub fn detached(
+        file: Option<File>,
+        file_path: Option<String>,
+        keyid: Option<String>,
+        key_passphrase: Option<String>,
+        output: Option<String>,
+    ) -> SignOption {
+        return SignOption {
+            file: file,
+            file_path: file_path,
+            keyid: keyid,
+            key_passphrase: key_passphrase,
+            clearsign: false,
+            detach: true,
             output: output,
             extra_args: None,
         };
