@@ -162,7 +162,7 @@ pub fn set_output_without_confirmation(args: &mut Vec<String>, output: &str) {
 }
 
 pub fn get_file_extension(file_path: Option<String>) -> String {
-    let mut ext: String = "".to_string();
+    let mut ext: String = "gpg".to_string();
 
     if file_path.is_some() {
         let p = file_path.unwrap();

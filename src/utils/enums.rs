@@ -9,7 +9,7 @@ pub enum Operation {
     SearchKey,
     Encrypt,
     Decrypt,
-    Sign
+    Sign,
 }
 
 impl Display for Operation {

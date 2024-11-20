@@ -469,29 +469,9 @@ impl GPG {
 
     //*******************************************************
     /// to encrypt file, use the DecryptionOption struct to create the decryption options
-    pub fn decrypt(
-        &self,
-        file: Option<File>,
-        file_path: Option<String>,
-        recipients: Option<String>,
-        always_trust: bool,
-        passphrase: Option<String>,
-        key_passphrase: Option<String>,
-        output: Option<String>,
-        extra_args: Option<Vec<String>>,
-    ) -> Result<CmdResult, GPGError> {
-        // file: file object
-        // file_path: path to file
-        // recipients: list of recipients keyid
-        // always_trust: whether to always trust keys
-        // passphrase: passphrase if file if symmetric encrypted [required if it was symmetric encrypted]
-        // key_passphrase: passphrase if file is key encrypted and need passphrase protected private key to decrypt
-        // output: path to write the decrypted output,
-        //         will use the default output dir with file name as [decrypted_file_<datetime>.<extension>] set in GPG if not provided
-        // extra_args: extra arguments to pass to gpg
-
-        let k_p: Option<String> = key_passphrase.clone();
-        let p: Option<String> = passphrase.clone();
+    pub fn decrypt(&self, decrypt_option: DecryptOption) -> Result<CmdResult, GPGError> {
+        let k_p: Option<String> = decrypt_option.key_passphrase.clone();
+        let p: Option<String> = decrypt_option.passphrase.clone();
         let mut pass: Option<String> = None;
 
         if k_p.is_some() {
@@ -513,11 +493,11 @@ impl GPG {
         }
 
         let args: Vec<String> = self.gen_decrypt_args(
-            file_path.clone(),
-            recipients,
-            always_trust,
-            output,
-            extra_args,
+            decrypt_option.file_path.clone(),
+            decrypt_option.recipient,
+            decrypt_option.always_trust,
+            decrypt_option.output,
+            decrypt_option.extra_args,
         );
 
         let result: Result<CmdResult, GPGError> = handle_cmd_io(
@@ -527,8 +507,8 @@ impl GPG {
             self.homedir.clone(),
             self.options.clone(),
             self.env.clone(),
-            file,
-            file_path,
+            decrypt_option.file,
+            decrypt_option.file_path,
             None,
             true,
             true,
@@ -548,14 +528,14 @@ impl GPG {
     pub fn gen_decrypt_args(
         &self,
         file_path: Option<String>,
-        recipients: Option<String>,
+        recipient: Option<String>,
         always_trust: bool,
         output: Option<String>,
         extra_args: Option<Vec<String>>,
     ) -> Vec<String> {
         let mut args: Vec<String> = vec!["--decrypt".to_string()];
-        if recipients.is_some() {
-            args.append(&mut vec!["--recipient".to_string(), recipients.unwrap()]);
+        if recipient.is_some() {
+            args.append(&mut vec!["--recipient".to_string(), recipient.unwrap()]);
         }
         if always_trust {
             args.append(&mut vec!["--trust-model".to_string(), "always".to_string()]);
@@ -706,6 +686,78 @@ impl EncryptOption {
             symmetric_algo: symmetric_algo,
             always_trust: true,
             passphrase: passphrase,
+            output: output,
+            extra_args: None,
+        };
+    }
+}
+
+/// a struct to represent GPG Decryption Option
+/// use this to construct the options for GPG Decryption
+/// that will be pass to the decryption method
+//*******************************************************
+
+//         RELATED TO GPG DECRYPTION OPTION
+
+//*******************************************************
+#[derive(Debug)]
+#[allow(dead_code)]
+pub struct DecryptOption {
+    // file: file object
+    file: Option<File>,
+    // file_path: path to file
+    file_path: Option<String>,
+    // recipients: recipients keyid
+    recipient: Option<String>,
+    // always_trust: whether to always trust keys
+    always_trust: bool,
+    // passphrase: passphrase if file if symmetric encrypted [required if it was symmetric encrypted]
+    passphrase: Option<String>,
+    // key_passphrase: passphrase if file is key encrypted and need passphrase protected private key to decrypt
+    key_passphrase: Option<String>,
+    // output: path to write the decrypted output,
+    //         will use the default output dir with file name as [decrypted_file_<datetime>.<extension>] set in GPG if not provided
+    output: Option<String>,
+    // extra_args: extra arguments to pass to gpg
+    extra_args: Option<Vec<String>>,
+}
+
+impl DecryptOption {
+    // for default, it will be a decryption with secret key and always trust will be true
+    // [key_passphrase is required for passphrase protected private key]
+    pub fn default(
+        file: Option<File>,
+        file_path: Option<String>,
+        recipient: Option<String>,
+        key_passphrase: Option<String>,
+        output: Option<String>,
+    ) -> DecryptOption {
+        return DecryptOption {
+            file: file,
+            file_path: file_path,
+            recipient: recipient,
+            always_trust: true,
+            passphrase: None,
+            key_passphrase: key_passphrase,
+            output: output,
+            extra_args: None,
+        };
+    }
+
+    // for with_symmetric, it will be a decryption with passphrase instead of secret keys and always trust will be true
+    pub fn with_symmetric(
+        file: Option<File>,
+        file_path: Option<String>,
+        passphrase: Option<String>,
+        output: Option<String>,
+    ) -> DecryptOption {
+        return DecryptOption {
+            file: file,
+            file_path: file_path,
+            recipient: None,
+            always_trust: true,
+            passphrase: passphrase,
+            key_passphrase: None,
             output: output,
             extra_args: None,
         };
