@@ -1,6 +1,6 @@
 use std::collections::HashMap;
-use std::env;
 use std::fs::File;
+use std::{env, result};
 
 use chrono::Local;
 
@@ -280,6 +280,45 @@ impl GPG {
                 return Err(e);
             }
         }
+    }
+
+    //*******************************************************
+
+    //                   FILE VERIFICATION
+
+    //*******************************************************
+    pub fn import_key(
+        &self,
+        key_buffer: Vec<u8>,
+        passphrase: Option<String>,
+        merge_only: bool,
+        extra_args: Option<Vec<String>>,
+    ) -> Result<CmdResult, GPGError> {
+        let mut args: Vec<String> = vec!["--import".to_string()];
+        if merge_only {
+            args.append(&mut vec![
+                "--import-options".to_string(),
+                "merge-only".to_string(),
+            ]);
+        };
+        if extra_args.is_some() {
+            args.append(&mut extra_args.unwrap());
+        };
+        let result: Result<CmdResult, GPGError> = handle_cmd_io(
+            Some(args),
+            passphrase,
+            self.version,
+            self.homedir.clone(),
+            self.options.clone(),
+            self.env.clone(),
+            None,
+            None,
+            Some(key_buffer),
+            true,
+            false,
+            Operation::ImportKey,
+        );
+        return result;
     }
 
     //*******************************************************
@@ -671,15 +710,15 @@ impl GPG {
         signature_file_path: Option<String>,
         extra_args: Option<Vec<String>>,
     ) -> Result<CmdResult, GPGError> {
-        // file: file object 
+        // file: file object
         // file_path: path to file
         // signature_file_path: path to signature file
         // extra_args: extra arguments to pass to gpg
 
         //*****************************************************************************************
-        //    NOTE: If only file or file_path is provided, it expected the file to include a 
+        //    NOTE: If only file or file_path is provided, it expected the file to include a
         //          complete signature.
-        //          For detached signature, signature_file_path is required along 
+        //          For detached signature, signature_file_path is required along
         //          with file or file_path
         //******************************************************************************************
 
