@@ -637,7 +637,7 @@ impl GPG {
             ));
             set_output_without_confirmation(&mut args, &file_path);
         } else {
-            let mut file_path: String = output.unwrap_or(file_path.unwrap_or(format!(
+            let file_path: String = output.unwrap_or(file_path.unwrap_or(format!(
                 "{}embedded_sign_{}.gpg",
                 self.output_dir, time_stamp
             )));
@@ -656,6 +656,70 @@ impl GPG {
             args.append(&mut extra_args.unwrap());
         }
 
+        return args;
+    }
+
+    //*******************************************************
+
+    //                   FILE VERIFICATION
+
+    //*******************************************************
+    pub fn verify_file(
+        &self,
+        file: Option<File>,
+        file_path: Option<String>,
+        signature_file_path: Option<String>,
+        extra_args: Option<Vec<String>>,
+    ) -> Result<CmdResult, GPGError> {
+        // file: file object 
+        // file_path: path to file
+        // signature_file_path: path to signature file
+        // extra_args: extra arguments to pass to gpg
+
+        //*****************************************************************************************
+        //    NOTE: If only file or file_path is provided, it expected the file to include a 
+        //          complete signature.
+        //          For detached signature, signature_file_path is required along 
+        //          with file or file_path
+        //******************************************************************************************
+
+        let args: Vec<String> = self.gen_verify_file_args(signature_file_path, extra_args);
+        let result: Result<CmdResult, GPGError> = handle_cmd_io(
+            Some(args),
+            None,
+            self.version,
+            self.homedir.clone(),
+            self.options.clone(),
+            self.env.clone(),
+            file,
+            file_path.clone(),
+            None,
+            true,
+            true,
+            Operation::Verify,
+        );
+        match result {
+            Ok(result) => {
+                return Ok(result);
+            }
+            Err(e) => {
+                return Err(e);
+            }
+        }
+    }
+
+    pub fn gen_verify_file_args(
+        &self,
+        signature_file_path: Option<String>,
+        extra_args: Option<Vec<String>>,
+    ) -> Vec<String> {
+        let mut args: Vec<String> = vec!["--verify".to_string()];
+        if signature_file_path.is_some() {
+            args.append(&mut vec![signature_file_path.unwrap(), "-".to_string()]);
+        }
+        if extra_args.is_some() {
+            args.append(&mut extra_args.unwrap());
+        }
         return args;
     }
 }

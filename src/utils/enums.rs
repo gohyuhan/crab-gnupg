@@ -10,6 +10,7 @@ pub enum Operation {
     Encrypt,
     Decrypt,
     Sign,
+    VerifyFile,
 }
 
 impl Display for Operation {
@@ -23,6 +24,7 @@ impl Display for Operation {
             Operation::Encrypt => write!(f, "Encrypt"),
             Operation::Decrypt => write!(f, "Decrypt"),
             Operation::Sign => write!(f, "Sign"),
+            Operation::VerifyFile => write!(f, "VerifyFile"),
         }
     }
 }
