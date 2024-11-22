@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::fs::File;
+use std::path::PathBuf;
 use std::{env, result};
 
 use chrono::Local;
@@ -284,7 +285,7 @@ impl GPG {
 
     //*******************************************************
 
-    //                   FILE VERIFICATION
+    //                   Import Key
 
     //*******************************************************
     pub fn import_key(
@@ -317,6 +318,111 @@ impl GPG {
             true,
             false,
             Operation::ImportKey,
+        );
+        return result;
+    }
+
+    //*******************************************************
+
+    //                   Export Key
+
+    //*******************************************************
+    pub fn export_public_key(
+        &self,
+        key_id: Option<Vec<String>>,
+        output: Option<String>,
+    ) -> Result<CmdResult, GPGError> {
+        let mut args: Vec<String> = vec!["--export".to_string()];
+        if output.is_some() {
+            args.append(&mut vec!["--output".to_string(), output.unwrap()]);
+        } else {
+            // if output folder not specified, system will create a exported_public_key folder in the set output dir when initalizling the gpg
+            // all exported public key will be saved to there with filename as public_key_<timestamp>.asc
+            let gpg_p_key_output_dir = PathBuf::from(self.output_dir.clone())
+                .join("exported_public_key")
+                .to_string_lossy()
+                .to_string();
+            if !check_is_dir(gpg_p_key_output_dir.clone()) {
+                std::fs::create_dir_all(gpg_p_key_output_dir.clone()).unwrap();
+            }
+            let time_stamp: String = Local::now().format("%Y%m%d-%H:%M:%S:%9f").to_string();
+            let gpg_p_key_output = PathBuf::from(gpg_p_key_output_dir)
+                .join(format!("public_key_{}.asc", time_stamp))
+                .to_string_lossy()
+                .to_string();
+            args.append(&mut vec!["--output".to_string(), gpg_p_key_output]);
+        }
+        if key_id.is_some() {
+            args.append(&mut key_id.unwrap());
+        }
+        let result: Result<CmdResult, GPGError> =
+            self.export_key(args, None, Operation::ExportPublicKey);
+        return result;
+    }
+
+    pub fn export_secret_key(
+        &self,
+        key_id: Option<Vec<String>>,
+        passphrase: Option<String>,
+        output: Option<String>,
+    ) -> Result<CmdResult, GPGError> {
+        if passphrase.is_some() {
+            if !is_passphrase_valid(&mut passphrase.as_ref().unwrap()) {
+                return Err(GPGError::new(
+                    GPGErrorType::PassphraseError("passphrase invalid".to_string()),
+                    None,
+                ));
+            }
+        }
+
+        let mut args: Vec<String> = vec!["--export-secret-key".to_string()];
+        if output.is_some() {
+            args.append(&mut vec!["--output".to_string(), output.unwrap()]);
+        } else {
+            // if output folder not specified, system will create a exported_secret_key folder in the set output dir when initalizling the gpg
+            // all exported secret key will be saved to there with filename as secret_key_<timestamp>.sec.asc
+            let gpg_s_key_output_dir = PathBuf::from(self.output_dir.clone())
+                .join("exported_secret_key")
+                .to_string_lossy()
+                .to_string();
+            if !check_is_dir(gpg_s_key_output_dir.clone()) {
+                std::fs::create_dir_all(gpg_s_key_output_dir.clone()).unwrap();
+            }
+            let time_stamp: String = Local::now().format("%Y%m%d-%H:%M:%S:%9f").to_string();
+            let gpg_s_key_output = PathBuf::from(gpg_s_key_output_dir)
+                .join(format!("secret_key_{}.sec.asc", time_stamp))
+                .to_string_lossy()
+                .to_string();
+            args.append(&mut vec!["--output".to_string(), gpg_s_key_output]);
+        }
+        if key_id.is_some() {
+            args.append(&mut key_id.unwrap());
+        }
+
+        let result: Result<CmdResult, GPGError> =
+            self.export_key(args, passphrase, Operation::ExportSecretKey);
+        return result;
+    }
+
+    fn export_key(
+        &self,
+        args: Vec<String>,
+        passphrase: Option<String>,
+        ops: Operation,
+    ) -> Result<CmdResult, GPGError> {
+        let result: Result<CmdResult, GPGError> = handle_cmd_io(
+            Some(args),
+            passphrase,
+            self.version,
+            self.homedir.clone(),
+            self.options.clone(),
+            self.env.clone(),
+            None,
+            None,
+            None,
+            false,
+            false,
+            ops,
         );
         return result;
     }
@@ -469,13 +575,13 @@ impl GPG {
 
             let ext: String = get_file_extension(file_path);
             let time_stamp: String = Local::now().format("%Y%m%d-%H:%M:%S:%9f").to_string();
-            let out: String = format!(
-                "{}{}_encrypted_file_{}.{}",
-                self.output_dir.clone(),
-                encrypt_type,
-                time_stamp,
-                ext
-            );
+            let out: String = PathBuf::from(self.output_dir.clone())
+                .join(format!(
+                    "{}_encrypted_file_{}.{}",
+                    encrypt_type, time_stamp, ext
+                ))
+                .to_string_lossy()
+                .to_string();
             args.append(&mut vec!["--output".to_string(), out]);
         }
 
@@ -590,12 +696,10 @@ impl GPG {
 
             let ext: String = get_file_extension(file_path);
             let time_stamp: String = Local::now().format("%Y%m%d-%H:%M:%S:%9f").to_string();
-            let out: String = format!(
-                "{}decrypted_file_{}.{}",
-                self.output_dir.clone(),
-                time_stamp,
-                ext
-            );
+            let out: String = PathBuf::from(self.output_dir.clone())
+                .join(format!("decrypted_file_{}.{}", time_stamp, ext))
+                .to_string_lossy()
+                .to_string();
             args.append(&mut vec!["--output".to_string(), out]);
         }
 
