@@ -332,6 +332,9 @@ impl GPG {
         key_id: Option<Vec<String>>,
         output: Option<String>,
     ) -> Result<CmdResult, GPGError> {
+        // key_id: list of keyid(s) to export, if not provided, all public keys will be exported
+        // output: path that the exported key file will be saved to
+
         let mut args: Vec<String> = vec!["--export".to_string()];
         if output.is_some() {
             args.append(&mut vec!["--output".to_string(), output.unwrap()]);
@@ -366,6 +369,18 @@ impl GPG {
         passphrase: Option<String>,
         output: Option<String>,
     ) -> Result<CmdResult, GPGError> {
+        // key_id: list of keyid(s) to export, if not provided, all secret keys will be exported
+        // passphrase: for gpg version > 2.1, passphrase for passphrase proctected secret keys are required
+        // output: path that the exported key file will be saved to
+
+        //*****************************************************************************
+        //  NOTE: If there are 2 or more secret key that are
+        //        passphrase proctected ( but different passphrase )
+        //        are being exported, only the the one that meet the first passphrase
+        //        and not passphrase protected will be exported.
+        //        ( as gpg can only read 1 passphrase at a time )
+        //*****************************************************************************
+
         if passphrase.is_some() {
             if !is_passphrase_valid(&mut passphrase.as_ref().unwrap()) {
                 return Err(GPGError::new(
@@ -433,7 +448,9 @@ impl GPG {
 
     //*******************************************************
     /// to encrypt file, use the EncryptionOption struct to create the encryption options
-    pub fn encrypt(&self, encryption_option: EncryptOption) -> Result<CmdResult, GPGError> {
+    pub fn encrypt(&self, encrypt_option: EncryptOption) -> Result<CmdResult, GPGError> {
+        // encryption_option: struct that contains all the encryption options ( refer to the struct for more info )
+
         //*****************************************************************************************
         //    NOTE: If signing with a passphrase-protected key,
         //          an error will occur.
@@ -450,7 +467,7 @@ impl GPG {
         //           causing the signing process to fail for passphrase protected key.
         //******************************************************************************************
 
-        let p: Option<String> = encryption_option.passphrase.clone();
+        let p: Option<String> = encrypt_option.passphrase.clone();
 
         if p.is_some() {
             if !is_passphrase_valid(p.as_ref().unwrap()) {
@@ -463,16 +480,16 @@ impl GPG {
 
         // generate encrypt operation arguments for gpg
         let args: Result<Vec<String>, GPGError> = self.gen_encrypt_args(
-            encryption_option.file_path.clone(),
-            encryption_option.recipients,
-            encryption_option.sign,
-            encryption_option.sign_key,
-            encryption_option.symmetric,
-            encryption_option.symmetric_algo,
-            encryption_option.always_trust,
-            encryption_option.passphrase,
-            encryption_option.output,
-            encryption_option.extra_args,
+            encrypt_option.file_path.clone(),
+            encrypt_option.recipients,
+            encrypt_option.sign,
+            encrypt_option.sign_key,
+            encrypt_option.symmetric,
+            encrypt_option.symmetric_algo,
+            encrypt_option.always_trust,
+            encrypt_option.passphrase,
+            encrypt_option.output,
+            encrypt_option.extra_args,
         );
 
         match args {
@@ -489,8 +506,8 @@ impl GPG {
             self.homedir.clone(),
             self.options.clone(),
             self.env.clone(),
-            encryption_option.file,
-            encryption_option.file_path,
+            encrypt_option.file,
+            encrypt_option.file_path,
             None,
             true,
             true,
@@ -615,6 +632,8 @@ impl GPG {
     //*******************************************************
     /// to encrypt file, use the DecryptionOption struct to create the decryption options
     pub fn decrypt(&self, decrypt_option: DecryptOption) -> Result<CmdResult, GPGError> {
+        // decrypt_option: struct that contains all the decryption options ( refer to the struct for more info )
+
         let k_p: Option<String> = decrypt_option.key_passphrase.clone();
         let p: Option<String> = decrypt_option.passphrase.clone();
         let mut pass: Option<String> = None;
@@ -715,6 +734,8 @@ impl GPG {
 
     //*******************************************************
     pub fn sign(&self, sign_option: SignOption) -> Result<CmdResult, GPGError> {
+        // sign_option: struct that contains all the signing options ( refer to the struct for more info )
+
         if sign_option.key_passphrase.is_some() {
             if !is_passphrase_valid(sign_option.key_passphrase.as_ref().unwrap()) {
                 return Err(GPGError::new(
@@ -724,7 +745,6 @@ impl GPG {
             }
         };
         let args: Vec<String> = self.gen_sign_args(
-            sign_option.file_path.clone(),
             sign_option.keyid.clone(),
             sign_option.clearsign,
             sign_option.detach,
@@ -758,7 +778,6 @@ impl GPG {
 
     fn gen_sign_args(
         &self,
-        file_path: Option<String>,
         keyid: Option<String>,
         clearsign: bool,
         detach: bool,
@@ -774,16 +793,20 @@ impl GPG {
         if detach {
             args.push("--detach-sign".to_string());
             let extension = if self.armor { ".asc" } else { ".sig" };
-            let file_path: String = output.unwrap_or(format!(
-                "{}detach_sign_{}{}",
-                self.output_dir, time_stamp, extension
-            ));
+            let file_path: String = output.unwrap_or(
+                PathBuf::from(self.output_dir.clone())
+                    .join(format!("detach_sign_{}{}", time_stamp, extension))
+                    .to_string_lossy()
+                    .to_string(),
+            );
             set_output_without_confirmation(&mut args, &file_path);
         } else {
-            let file_path: String = output.unwrap_or(file_path.unwrap_or(format!(
-                "{}embedded_sign_{}.gpg",
-                self.output_dir, time_stamp
-            )));
+            let file_path: String = output.unwrap_or(
+                PathBuf::from(self.output_dir.clone())
+                    .join(format!("embedded_sign_{}.gpg", time_stamp))
+                    .to_string_lossy()
+                    .to_string(),
+            );
             set_output_without_confirmation(&mut args, &file_path);
         }
 
@@ -1073,7 +1096,6 @@ pub struct SignOption {
     detach: bool,
     // output: path to write the detached signature or embedded sign file
     //         if output not specified:
-    //           for embedded sign file, will tend to use file_path ( will overwrite )
     //           will use the default output dir with file name as [<sign_type>_<datetime>.<sig or gpg>] set in GPG if
     //           file is provided instead of file_path or detached signature
     output: Option<String>,
