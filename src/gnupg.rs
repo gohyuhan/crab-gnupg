@@ -6,7 +6,7 @@ use std::{env, result};
 use chrono::Local;
 
 use crate::process::handle_cmd_io;
-use crate::utils::enums::Operation;
+use crate::utils::enums::{Operation, TrustLevel};
 use crate::utils::{
     errors::{GPGError, GPGErrorType},
     response::{CmdResult, ListKeyResult},
@@ -439,6 +439,43 @@ impl GPG {
             false,
             ops,
         );
+        return result;
+    }
+
+    //*******************************************************
+
+    //                   Trust Key
+
+    //*******************************************************
+    pub fn trust_key(
+        &self,
+        fingerprints: Vec<String>,
+        trust_level: TrustLevel,
+    ) -> Result<CmdResult, GPGError> {
+        // fingerprints: list of fingerprint(s) to trust
+        // trust_level: trust level to set for the key
+
+        let args: Vec<String> = vec!["--import-ownertrust".to_string()];
+        let mut input_list: String = String::new();
+        for fingerprint in fingerprints {
+            input_list.push_str(&format!("{}:{}:\n", fingerprint, trust_level.value()));
+        }
+
+        let result = handle_cmd_io(
+            Some(args),
+            None,
+            self.version,
+            self.homedir.clone(),
+            self.options.clone(),
+            self.env.clone(),
+            None,
+            None,
+            Some(input_list.as_bytes().to_vec()),
+            true,
+            false,
+            Operation::TrustKey,
+        );
+
         return result;
     }
 

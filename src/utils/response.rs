@@ -98,7 +98,7 @@ impl CmdResult {
 #[derive(Debug, Clone)]
 pub struct ListKeyResult {
     pub r#type: String,
-    pub trust: String,
+    pub validity: String,
     pub length: String,
     pub algo: String,
     pub keyid: String,
@@ -117,6 +117,7 @@ pub struct ListKeyResult {
     pub compliance: String,
     pub updated: String,
     pub origin: String,
+    pub comment: String,
     pub keygrip: String,
     pub uids: Vec<String>,
     pub sigs: Vec<String>,
@@ -128,7 +129,7 @@ impl ListKeyResult {
     fn new(args: Vec<&str>) -> Self {
         return ListKeyResult {
             r#type: String::from(args[0]),
-            trust: String::from(args[1]),
+            validity: String::from(args[1]),
             length: String::from(args[2]),
             algo: String::from(args[3]),
             keyid: String::from(args[4]),
@@ -147,6 +148,7 @@ impl ListKeyResult {
             compliance: String::from(args[17]),
             updated: String::from(args[18]),
             origin: String::from(args[19]),
+            comment: String::from(args[20]),
             keygrip: String::from(args[20]),
             uids: vec![],
             sigs: vec![],
