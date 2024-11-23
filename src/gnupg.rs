@@ -23,7 +23,7 @@ use crate::utils::{
 //                 RELATED TO GPG
 
 //*******************************************************
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct GPG {
     /// a path to a directory where the local key were at
     pub homedir: String,
@@ -317,7 +317,7 @@ impl GPG {
 
         let mut args: Vec<String> = vec!["--export".to_string()];
         if output.is_some() {
-            args.append(&mut vec!["--output".to_string(), output.unwrap()]);
+            set_output_without_confirmation(&mut args, &output.unwrap());
         } else {
             // if output folder not specified, system will create a exported_public_key folder in the set output dir when initalizling the gpg
             // all exported public key will be saved to there with filename as public_key_<timestamp>.asc
@@ -333,7 +333,7 @@ impl GPG {
                 .join(format!("public_key_{}.asc", time_stamp))
                 .to_string_lossy()
                 .to_string();
-            args.append(&mut vec!["--output".to_string(), gpg_p_key_output]);
+            set_output_without_confirmation(&mut args, &gpg_p_key_output);
         }
         if key_id.is_some() {
             args.append(&mut key_id.unwrap());
@@ -372,7 +372,7 @@ impl GPG {
 
         let mut args: Vec<String> = vec!["--export-secret-key".to_string()];
         if output.is_some() {
-            args.append(&mut vec!["--output".to_string(), output.unwrap()]);
+            set_output_without_confirmation(&mut args, &output.unwrap());
         } else {
             // if output folder not specified, system will create a exported_secret_key folder in the set output dir when initalizling the gpg
             // all exported secret key will be saved to there with filename as secret_key_<timestamp>.sec.asc
@@ -388,7 +388,7 @@ impl GPG {
                 .join(format!("secret_key_{}.sec.asc", time_stamp))
                 .to_string_lossy()
                 .to_string();
-            args.append(&mut vec!["--output".to_string(), gpg_s_key_output]);
+            set_output_without_confirmation(&mut args, &gpg_s_key_output);
         }
         if key_id.is_some() {
             args.append(&mut key_id.unwrap());

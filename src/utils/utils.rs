@@ -1,6 +1,6 @@
 use std::fs::{metadata, set_permissions, File};
 use std::os::unix::fs::PermissionsExt;
-use std::path::{self, Path, PathBuf};
+use std::path::{Path, PathBuf};
 
 use regex::Regex;
 
