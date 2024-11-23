@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::env::Args;
 use std::fs::File;
 use std::path::PathBuf;
 use std::{env, result};
@@ -285,7 +286,7 @@ impl GPG {
 
     //*******************************************************
 
-    //                   Import Key
+    //                   IMPORT KEY
 
     //*******************************************************
     pub fn import_key(
@@ -324,7 +325,7 @@ impl GPG {
 
     //*******************************************************
 
-    //                   Export Key
+    //                   EXPORT KEY
 
     //*******************************************************
     pub fn export_public_key(
@@ -376,9 +377,9 @@ impl GPG {
         //*****************************************************************************
         //  NOTE: If there are 2 or more secret key that are
         //        passphrase proctected ( but different passphrase )
-        //        are being exported, only the the one that meet the first passphrase
+        //        are being exported, keys that are protected by the passphrase
         //        and not passphrase protected will be exported.
-        //        ( as gpg can only read 1 passphrase at a time )
+        //        ( as gpg can only read 1 passphrase at a time from STDIN)
         //*****************************************************************************
 
         if passphrase.is_some() {
@@ -444,7 +445,7 @@ impl GPG {
 
     //*******************************************************
 
-    //                   Trust Key
+    //                   TRUST KEY
 
     //*******************************************************
     pub fn trust_key(
@@ -474,6 +475,56 @@ impl GPG {
             true,
             false,
             Operation::TrustKey,
+        );
+
+        return result;
+    }
+
+    //*******************************************************
+
+    //                   SIGN KEY
+
+    //*******************************************************
+    pub fn sign_key(
+        &self,
+        signing_key_id: String,
+        target_key_id: String,
+        passphrase: Option<String>,
+        extra_args: Option<Vec<String>>,
+    ) -> Result<CmdResult, GPGError> {
+        if passphrase.is_some() {
+            if !is_passphrase_valid(passphrase.as_ref().unwrap()) {
+                return Err(GPGError::new(
+                    GPGErrorType::PassphraseError("passphrase invalid".to_string()),
+                    None,
+                ));
+            }
+        }
+
+        let mut args: Vec<String> = vec![
+            "--yes".to_string(),
+            "--default-key".to_string(),
+            signing_key_id,
+            "--sign-key".to_string(),
+            target_key_id,
+        ];
+        if extra_args.is_some() {
+            args.append(&mut extra_args.unwrap());
+        }
+
+        let result = handle_cmd_io(
+            Some(args),
+            passphrase,
+            self.version,
+            self.homedir.clone(),
+            self.options.clone(),
+            self.env.clone(),
+            None,
+            None,
+            None,
+            false,
+            false,
+            Operation::SignKey,
         );
 
         return result;

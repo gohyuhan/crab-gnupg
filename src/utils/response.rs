@@ -97,6 +97,7 @@ impl CmdResult {
 //*******************************************************
 #[derive(Debug, Clone)]
 pub struct ListKeyResult {
+    // https://github.com/gpg/gnupg/blob/master/doc/DETAILS
     pub r#type: String,
     pub validity: String,
     pub length: String,
