@@ -3,12 +3,11 @@ use std::fmt::{Display, Formatter};
 use super::response::CmdResult;
 
 #[derive(Debug)]
-#[allow(dead_code)]
 pub struct GPGError {
     // the type of error
-    error_type: GPGErrorType,
+    pub error_type: GPGErrorType,
     // provide more insight if error occured during the gpg cmd process
-    cmd_result: Option<CmdResult>,
+    pub cmd_result: Option<CmdResult>,
 }
 
 impl GPGError {

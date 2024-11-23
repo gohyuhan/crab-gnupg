@@ -1,6 +1,6 @@
 use std::fs::{metadata, set_permissions, File};
 use std::os::unix::fs::PermissionsExt;
-use std::path::{Path, PathBuf};
+use std::path::{self, Path, PathBuf};
 
 use regex::Regex;
 
@@ -30,9 +30,9 @@ fn get_user_directory() -> PathBuf {
 }
 
 ///  retrieve or generate the directory for gpg key
-pub fn get_or_create_gpg_homedir() -> String {
+pub fn get_or_create_gpg_homedir(path:String) -> String {
     let home_dir = get_user_directory();
-    let gpg_dir = home_dir.join(".gnupg").to_string_lossy().to_string();
+    let gpg_dir = if !path.is_empty() { path } else { home_dir.join(".gnupg").to_string_lossy().to_string() };
 
     if !check_is_dir(gpg_dir.clone()) {
         std::fs::create_dir_all(gpg_dir.clone()).unwrap();
@@ -57,9 +57,9 @@ pub fn get_or_create_gpg_homedir() -> String {
 }
 
 ///  retrieve or generate the directory for gpg output
-pub fn get_or_create_gpg_output_dir() -> String {
+pub fn get_or_create_gpg_output_dir(path:String) -> String {
     let home_dir = get_user_directory();
-    let gpg_output_dir = home_dir.join("gnupg/output").to_string_lossy().to_string();
+    let gpg_output_dir = if !path.is_empty() { path } else { home_dir.join("gnupg/output").to_string_lossy().to_string() };
 
     if !check_is_dir(gpg_output_dir.clone()) {
         std::fs::create_dir_all(gpg_output_dir.clone()).unwrap();

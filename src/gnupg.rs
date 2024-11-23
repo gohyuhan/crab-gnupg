@@ -1,8 +1,7 @@
 use std::collections::HashMap;
-use std::env::Args;
+use std::env;
 use std::fs::File;
 use std::path::PathBuf;
-use std::{env, result};
 
 use chrono::Local;
 
@@ -25,26 +24,25 @@ use crate::utils::{
 
 //*******************************************************
 #[derive(Debug)]
-#[allow(dead_code)]
 pub struct GPG {
     /// a path to a directory where the local key were at
-    homedir: String,
+    pub homedir: String,
     /// a path to a directory where the output files from gpg will save to
-    output_dir: String,
+    pub output_dir: String,
     /// a haspmap ( or dict (in python) ) of env variables that would be passed to process
-    env: Option<HashMap<String, String>>,
+    pub env: Option<HashMap<String, String>>,
     /// a list of name of keyring files to use. If provided, the default keyring will be ignored.
-    keyrings: Option<Vec<String>>,
+    pub keyrings: Option<Vec<String>>,
     /// a list of name of secret keyring files to use.
-    secret_keyring: Option<Vec<String>>,
+    pub secret_keyring: Option<Vec<String>>,
     /// additional arguments to be passed to gpg
-    options: Option<Vec<String>>,
+    pub options: Option<Vec<String>>,
     /// a boolean to indicate if the output should be armored
-    armor: bool,
+    pub armor: bool,
     /// the major minor version of gpg, should only be set by system, user should not set this ex) 2.4
-    version: f32,
+    pub version: f32,
     /// the full version of gpg, should only be set by system, user should not set this ex) 2.4.6
-    full_version: String,
+    pub full_version: String,
 }
 
 impl GPG {
@@ -58,28 +56,9 @@ impl GPG {
         // output_dir: a path to a directory where the output files from gpg will save to
         // a boolean to indicate if the output should be armored
 
-        let mut h_d: String = homedir.unwrap_or(String::new());
-        let mut o_d: String = output_dir.unwrap_or(String::new());
+        let h_d: String = get_or_create_gpg_homedir(homedir.unwrap_or(String::new()));
+        let o_d: String = get_or_create_gpg_output_dir(output_dir.unwrap_or(String::new()));
 
-        if h_d.is_empty() {
-            h_d = get_or_create_gpg_homedir();
-        }
-        if o_d.is_empty() {
-            o_d = get_or_create_gpg_output_dir();
-        }
-
-        if !check_is_dir(h_d.clone()) {
-            return Err(GPGError::new(
-                GPGErrorType::OutputDirError(format!("{} is not a directory", h_d)),
-                None,
-            ));
-        }
-        if !check_is_dir(o_d.clone()) {
-            return Err(GPGError::new(
-                GPGErrorType::OutputDirError(format!("{} is not a directory", o_d)),
-                None,
-            ));
-        }
         let result = handle_cmd_io(
             Some(vec![
                 "--list-config".to_string(),
@@ -777,7 +756,7 @@ impl GPG {
         }
     }
 
-    pub fn gen_decrypt_args(
+    fn gen_decrypt_args(
         &self,
         file_path: Option<String>,
         recipient: Option<String>,
@@ -962,7 +941,7 @@ impl GPG {
         }
     }
 
-    pub fn gen_verify_file_args(
+    fn gen_verify_file_args(
         &self,
         signature_file_path: Option<String>,
         extra_args: Option<Vec<String>>,
@@ -987,7 +966,6 @@ impl GPG {
 
 //*******************************************************
 #[derive(Debug)]
-#[allow(dead_code)]
 pub struct EncryptOption {
     // file: file object
     file: Option<File>,
@@ -1096,7 +1074,6 @@ impl EncryptOption {
 
 //*******************************************************
 #[derive(Debug)]
-#[allow(dead_code)]
 pub struct DecryptOption {
     // file: file object
     file: Option<File>,
@@ -1168,7 +1145,6 @@ impl DecryptOption {
 
 //*******************************************************
 #[derive(Debug)]
-#[allow(dead_code)]
 pub struct SignOption {
     // file: file object
     file: Option<File>,

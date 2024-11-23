@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use super::enums::Operation;
 
 //*******************************************************
@@ -9,14 +11,14 @@ use super::enums::Operation;
 /// a result handler for command process output/error result
 #[derive(Debug, Clone)]
 pub struct CmdResult {
-    raw_data: Option<String>,
-    return_code: Option<i32>,
-    status: Option<String>,
-    status_message: Option<String>,
-    operation: Operation,
-    debug_log: Option<Vec<String>>,
-    problem: Option<Vec<String>>,
-    success: bool,
+    pub raw_data: Option<String>,
+    pub return_code: Option<i32>,
+    pub status: Option<String>,
+    pub status_message: Option<String>,
+    pub operation: Operation,
+    pub debug_log: Option<Vec<String>>,
+    pub problem: Option<Vec<HashMap<String, String>>>,
+    pub success: bool,
 }
 
 impl CmdResult {
@@ -51,6 +53,19 @@ impl CmdResult {
 
         if keyword == "FAILURE" {
             self.success = false;
+        } else if keyword == "BADSIG" {
+            self.success = false;
+            self.status = Some("bad signature".to_string());
+            let values = value.splitn(2, char::is_whitespace).collect::<Vec<&str>>();
+            let mut problem: HashMap<String, String> = HashMap::new();
+            problem.insert("status".to_string(), self.status.as_ref().unwrap().clone());
+            problem.insert("key_id".to_string(), values[0].to_string());
+            problem.insert("username".to_string(), values[1].to_string());
+            if self.problem.is_none() {
+                self.problem = Some(vec![problem]);
+            } else {
+                self.problem.as_mut().unwrap().push(problem);
+            }
         }
     }
 
