@@ -24,6 +24,8 @@ use crab_gnupg::{
 #[cfg(test)]
 mod tests {
 
+    use crab_gnupg::utils::enums::TrustLevel;
+
     use super::*;
 
     fn get_homedir(name:&str) -> String {
@@ -86,6 +88,8 @@ mod tests {
     
     #[test]
     fn test_gnupg_init() {
+        // test the init function of GPG
+
         let name:String  = generate_random_string();
         let name: &str = name.as_str();
 
@@ -98,6 +102,8 @@ mod tests {
 
     #[test]
     fn test_gnupg_gen_key_with_passphrase() {
+        // test the generate key with passphrase
+
         let name:String  = generate_random_string();
         let name: &str = name.as_str();
 
@@ -110,6 +116,8 @@ mod tests {
 
     #[test]
     fn test_gnupg_gen_key_no_passphrase() {
+        // test the generate key without passphrase
+
         let name:String  = generate_random_string();
         let name: &str = name.as_str();
 
@@ -121,6 +129,8 @@ mod tests {
 
     #[test]
     fn test_gnupg_gen_key_error_invalid_args() {
+        // test the generate key with invalid arguments
+
         let name:String  = generate_random_string();
         let name: &str = name.as_str();
 
@@ -135,6 +145,8 @@ mod tests {
 
     #[test]
     fn test_list_keys(){
+        // test the listing keys
+
         let name:String  = generate_random_string();
         let name: &str = name.as_str();
 
@@ -148,6 +160,8 @@ mod tests {
 
     #[test]
     fn test_list_keys_no_key(){
+        // test the listing keys while there were no keys in local gpg home directory
+
         let name:String  = generate_random_string();
         let name: &str = name.as_str();
 
@@ -160,6 +174,8 @@ mod tests {
 
     #[test]
     fn test_export_public_key(){
+        // test exporting the public key
+
         let name:String  = generate_random_string();
         let name: &str = name.as_str();
 
@@ -177,6 +193,8 @@ mod tests {
 
     #[test]
     fn test_export_secret_key(){
+        // test exporting the secretkey
+
         let name:String  = generate_random_string();
         let name: &str = name.as_str();
 
@@ -194,6 +212,8 @@ mod tests {
 
     #[test]
     fn test_export_secret_key_no_passphrase(){
+        // test exporting passphrase protected seceret key without passphrase
+
         let name:String  = generate_random_string();
         let name: &str = name.as_str();
 
@@ -211,6 +231,9 @@ mod tests {
 
     #[test]
     fn test_export_partial_secret_key(){
+        // test exporting passphrase protected seceret key without passphrase together with unprotected seceret key
+        // this will still result in a success as the export will be done for the unprotected key
+
         let name:String  = generate_random_string();
         let name: &str = name.as_str();
 
@@ -227,6 +250,8 @@ mod tests {
 
     #[test] 
     fn test_export_key_no_key(){
+        // test exporting keys but there are no keys in local gpg home directory
+
         let name:String  = generate_random_string();
         let name: &str = name.as_str();
 
@@ -239,8 +264,67 @@ mod tests {
         cleanup_after_tests(name);
     }
 
+    #[test] 
+    fn test_export_key_wrong_key_id(){
+        // test exporting keys if all the keyid(s) provided were incorrect
+
+        let name:String  = generate_random_string();
+        let name: &str = name.as_str();
+
+        let gpg: GPG = get_gpg_init(name);
+        gen_unprotected_key(gpg.clone());
+        let result: Vec<ListKeyResult> = list_keys(gpg.clone(), false, false);
+        let mut keyid: String = result[0].keyid.clone();
+
+        if let Some(char) = keyid.pop() {
+            if char as u8 == 1{
+                keyid.push('0');
+            } else {
+                keyid.push('1');
+            }
+        }
+
+        let output: String = PathBuf::from(get_output_dir(name)).join("test_export_public_key.asc").to_string_lossy().to_string();
+        let result: Result<CmdResult, GPGError> = gpg.export_public_key(Some(vec![keyid]),Some(output.clone()));
+        assert_eq!(result.unwrap().is_success(), true);
+        assert_eq!(Path::new(&output).exists(), false);
+
+        cleanup_after_tests(name);
+    }
+
+    #[test] 
+    fn test_export_key_partial_wrong_key_id(){
+        // test exporting keys if some of the keyid(s) provided were incorrect
+
+        let name:String  = generate_random_string();
+        let name: &str = name.as_str();
+
+        let gpg: GPG = get_gpg_init(name);
+        gen_unprotected_key(gpg.clone());
+        gen_unprotected_key(gpg.clone());
+        let result: Vec<ListKeyResult> = list_keys(gpg.clone(), false, false);
+        let mut keyid: String = result[0].keyid.clone();
+
+        if let Some(char) = keyid.pop() {
+            if char as u8 == 1{
+                keyid.push('0');
+            } else {
+                keyid.push('1');
+            }
+        }
+
+        let output: String = PathBuf::from(get_output_dir(name)).join("test_export_public_key.asc").to_string_lossy().to_string();
+        let result: Result<CmdResult, GPGError> = gpg.export_public_key(Some(vec![keyid, result[1].keyid.clone()]),Some(output.clone()));
+        assert_eq!(result.unwrap().is_success(), true);
+        assert_eq!(Path::new(&output).exists(), true);
+
+        cleanup_after_tests(name);
+    }
+
     #[test]
     fn test_import_public_key(){
+        // test importing public key
+
         let name:String  = generate_random_string();
         let name: &str = name.as_str();
 
@@ -264,6 +348,8 @@ mod tests {
 
     #[test]
     fn test_import_secret_key(){
+        // test importing secret key
+
         let name:String  = generate_random_string();
         let name: &str = name.as_str();
 
@@ -287,6 +373,8 @@ mod tests {
 
     #[test]
     fn test_import_key_non_key_file(){
+        // test importing key with a non key file
+
         let name:String  = generate_random_string();
         let name: &str = name.as_str();
 
@@ -299,6 +387,78 @@ mod tests {
         let result: Result<CmdResult, GPGError> = gpg.import_key(Some(file), None,  false, None);
         assert!(matches!(result.unwrap_err().error_type, GPGErrorType::GPGProcessError(_)));
         assert_eq!(list_keys(gpg, true, false).len(), 0);
+
+        cleanup_after_tests(name);
+    }
+
+    #[test]
+    fn test_trust_key(){
+        // test setting ownertrust for key
+
+        let name:String  = generate_random_string();
+        let name: &str = name.as_str();
+
+        let gpg: GPG = get_gpg_init(name);
+        gen_unprotected_key(gpg.clone());
+
+        let result: Vec<ListKeyResult> = list_keys(gpg.clone(), false, false);
+        assert_eq!(result[0].ownertrust, "u".to_string());
+
+        let result: Result<CmdResult, GPGError> = gpg.trust_key(vec![result[0].fingerprint.clone()], TrustLevel::Fully);
+        assert_eq!(result.unwrap().is_success(), true);
+        assert_eq!(list_keys(gpg, false, false)[0].ownertrust, "f".to_string());
+
+        cleanup_after_tests(name);
+    }
+
+    #[test]
+    fn test_trust_key_invalid_fingerprint(){
+        // test setting ownertrust for key with invalid fingerprint
+
+        let name:String  = generate_random_string();
+        let name: &str = name.as_str();
+
+        let gpg: GPG = get_gpg_init(name);
+        gen_unprotected_key(gpg.clone());
+
+        let result: Vec<ListKeyResult> = list_keys(gpg.clone(), false, false);
+        assert_eq!(result[0].ownertrust, "u".to_string());
+
+        let result: Result<CmdResult, GPGError> = gpg.trust_key(vec![format!("{}123", result[0].fingerprint)], TrustLevel::Fully);
+        assert!(matches!(result.unwrap_err().error_type, GPGErrorType::GPGProcessError(_)));
+        assert_eq!(list_keys(gpg, false, false)[0].ownertrust, "u".to_string());
+
+        cleanup_after_tests(name);
+    }
+
+    #[test]
+    fn test_trust_key_not_found_fingerprint(){
+        // test setting ownertrust for key with a valid fingerprint that doesn't exist in the local home directory
+
+        let name:String  = generate_random_string();
+        let name: &str = name.as_str();
+
+        let gpg: GPG = get_gpg_init(name);
+        gen_unprotected_key(gpg.clone());
+
+        let result: Vec<ListKeyResult> = list_keys(gpg.clone(), false, false);
+        assert_eq!(result[0].ownertrust, "u".to_string());
+
+        // change the fingerprint into another valid format of fingerprint that doesn't exist in the local
+        let mut fingerprint: String = result[0].fingerprint.clone();
+
+        if let Some(char) = fingerprint.pop() {
+            if char as u8 == 1{
+                fingerprint.push('0');
+            } else {
+                fingerprint.push('1');
+            }
+        }
+
+        let result: Result<CmdResult, GPGError> = gpg.trust_key(vec![fingerprint], TrustLevel::Fully);
+        // although the fingerprint is not found in local, the gpg process will still return success
+        assert_eq!(result.unwrap().is_success(), true);
+        assert_eq!(list_keys(gpg, false, false)[0].ownertrust, "u".to_string());
 
         cleanup_after_tests(name);
     }
