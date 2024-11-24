@@ -24,8 +24,6 @@ use crab_gnupg::{
 #[cfg(test)]
 mod tests {
 
-    use std::string;
-
     use super::*;
 
     fn get_homedir(name:&str) -> String {
