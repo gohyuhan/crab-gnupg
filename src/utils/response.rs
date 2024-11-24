@@ -147,7 +147,7 @@ pub struct ListKeyResult {
     pub comment: String,
     pub keygrip: String,
     pub uids: Vec<String>,
-    pub sigs: Vec<String>,
+    pub sigs: Vec<Vec<String>>,
     pub subkeys: Vec<Subkey>,
     pub fingerprint: String,
 }
@@ -316,7 +316,7 @@ impl ListKey {
     }
 
     fn sig(&mut self, args: Vec<&str>) {
-        self.curkey.as_mut().unwrap().sigs.append(&mut vec![
+        self.curkey.as_mut().unwrap().sigs.push(vec![
             args[4].to_string(),
             args[9].to_string(),
             args[10].to_string(),

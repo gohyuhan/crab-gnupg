@@ -16,7 +16,8 @@ use crab_gnupg::{
     gnupg::GPG,
     utils::{
         errors::{GPGError, GPGErrorType},
-        response::{CmdResult, ListKeyResult}
+        response::{CmdResult, ListKeyResult},
+        enums::TrustLevel
     },
 };
 
@@ -24,20 +25,18 @@ use crab_gnupg::{
 #[cfg(test)]
 mod tests {
 
-    use crab_gnupg::utils::enums::TrustLevel;
-
     use super::*;
 
     fn get_homedir(name:&str) -> String {
         let home_dir = std::env::var("HOME").unwrap();
 
-        return PathBuf::from(home_dir).join(format!("gnupg_test_{}/test_home", name)).to_string_lossy().to_string();
+        return PathBuf::from(home_dir).join(format!("crab_gpg_test/gnupg_test_{}/test_home", name)).to_string_lossy().to_string();
     }
     
     fn get_output_dir(name:&str) -> String {
         let home_dir = std::env::var("HOME").unwrap();
 
-        return PathBuf::from(home_dir).join(format!("gnupg_test_{}/test_output", name)).to_string_lossy().to_string();
+        return PathBuf::from(home_dir).join(format!("crab_gpg_test/gnupg_test_{}/test_output", name)).to_string_lossy().to_string();
     }
 
     fn generate_random_string() -> String {
@@ -76,7 +75,7 @@ mod tests {
 
     fn cleanup_after_tests(name:&str) {
         let home_dir = std::env::var("HOME").unwrap();
-        let test_dir = PathBuf::from(home_dir).join(format!("gnupg_test_{}", name)).to_string_lossy().to_string();
+        let test_dir = PathBuf::from(home_dir).join(format!("crab_gpg_test/gnupg_test_{}", name)).to_string_lossy().to_string();
     
         // Perform cleanup here
         if let Err(e) = remove_dir_all(test_dir) {
@@ -460,6 +459,185 @@ mod tests {
         assert_eq!(result.unwrap().is_success(), true);
         assert_eq!(list_keys(gpg, false, false)[0].ownertrust, "u".to_string());
 
+        cleanup_after_tests(name);
+    }
+
+    #[test]
+    fn test_sign_key(){
+        // test signing key
+
+        let name:String  = generate_random_string();
+        let name: &str = name.as_str();
+
+        let gpg: GPG = get_gpg_init(name);
+        gen_unprotected_key(gpg.clone());
+        gen_unprotected_key(gpg.clone());
+
+        let result: Vec<ListKeyResult> = list_keys(gpg.clone(), true, false);
+
+        let result: Result<CmdResult, GPGError> = gpg.sign_key(
+            result[0].keyid.clone(), 
+            result[1].keyid.clone(), 
+            None, 
+            None
+        );
+        
+        assert_eq!(result.unwrap().is_success(), true);
+        assert_eq!(list_keys(gpg, false, true)[1].sigs.len(), 2);
+    
+        cleanup_after_tests(name);
+    }
+
+    #[test]
+    fn test_sign_default_key_wrong_keyid(){
+        // test signing key ( signing default key with another key )
+
+        let name:String  = generate_random_string();
+        let name: &str = name.as_str();
+
+        let gpg: GPG = get_gpg_init(name);
+        gen_unprotected_key(gpg.clone());
+        gen_unprotected_key(gpg.clone());
+
+        let result: Vec<ListKeyResult> = list_keys(gpg.clone(), true, false);
+        let mut keyid: String = result[1].keyid.clone();
+
+        if let Some(char) = keyid.pop() {
+            if char as u8 == 1{
+                keyid.push('0');
+            } else {
+                keyid.push('1');
+            }
+        }
+        
+        println!("KEYID {:?}", keyid);
+        let result: Result<CmdResult, GPGError> = gpg.sign_key(
+            keyid, 
+            result[0].keyid.clone(), 
+            None, 
+            None
+        );
+        
+        assert_eq!(result.unwrap().is_success(), true);
+        assert_eq!(list_keys(gpg, false, true)[0].sigs.len(), 1);
+    
+        cleanup_after_tests(name);
+    }
+
+    #[test]
+    fn test_sign_key_wrong_keyid(){
+        // test signing key
+        // if the keyid is not found, it will default to use the first key gpg found
+
+        let name:String  = generate_random_string();
+        let name: &str = name.as_str();
+
+        let gpg: GPG = get_gpg_init(name);
+        gen_unprotected_key(gpg.clone());
+        gen_unprotected_key(gpg.clone());
+
+        let result: Vec<ListKeyResult> = list_keys(gpg.clone(), true, false);
+        let mut keyid: String = result[0].keyid.clone();
+
+        if let Some(char) = keyid.pop() {
+            if char as u8 == 1{
+                keyid.push('0');
+            } else {
+                keyid.push('1');
+            }
+        }
+        
+        let result: Result<CmdResult, GPGError> = gpg.sign_key(
+            keyid, 
+            result[1].keyid.clone(), 
+            None, 
+            None
+        );
+        
+        assert_eq!(result.unwrap().is_success(), true);
+        assert_eq!(list_keys(gpg, false, true)[1].sigs.len(), 2);
+    
+        cleanup_after_tests(name);
+    }
+
+    #[test]
+    fn test_sign_key_with_passphrase_protected_key(){
+        // test signing key with passphrase proctected key
+        // gpg signing use private key
+
+        let name:String  = generate_random_string();
+        let name: &str = name.as_str();
+
+        let gpg: GPG = get_gpg_init(name);
+        gen_protected_key(gpg.clone());
+        gen_unprotected_key(gpg.clone());
+
+        let result: Vec<ListKeyResult> = list_keys(gpg.clone(), true, false);
+        
+        let result: Result<CmdResult, GPGError> = gpg.sign_key(
+            result[0].keyid.clone(), 
+            result[1].keyid.clone(), 
+            Some(get_key_passphrass()), 
+            None
+        );
+        
+        assert_eq!(result.unwrap().is_success(), true);
+        assert_eq!(list_keys(gpg, false, true)[1].sigs.len(), 2);
+    
+        cleanup_after_tests(name);
+    }
+
+    #[test]
+    fn test_sign_key_with_passphrase_protected_key_wrong_passphrase(){
+        // test signing key with passphrase proctected key with wrong passphrase
+        // gpg signing use private key
+
+        let name:String  = generate_random_string();
+        let name: &str = name.as_str();
+
+        let gpg: GPG = get_gpg_init(name);
+        gen_protected_key(gpg.clone());
+        gen_unprotected_key(gpg.clone());
+
+        let result: Vec<ListKeyResult> = list_keys(gpg.clone(), true, false);
+        
+        let result: Result<CmdResult, GPGError> = gpg.sign_key(
+            result[0].keyid.clone(), 
+            result[1].keyid.clone(), 
+            Some("wrong-passphrase".to_string()), 
+            None
+        );
+        
+        assert!(matches!(result.unwrap_err().error_type, GPGErrorType::GPGProcessError(_)));
+        assert_eq!(list_keys(gpg, false, true)[1].sigs.len(), 1);
+    
+        cleanup_after_tests(name);
+    }
+
+    #[test]
+    fn test_sign_key_with_passphrase_protected_key_no_passphrase(){
+        // test signing key with passphrase proctected key without providing passphrase
+        // gpg signing use private key
+
+        let name:String  = generate_random_string();
+        let name: &str = name.as_str();
+
+        let gpg: GPG = get_gpg_init(name);
+        gen_protected_key(gpg.clone());
+        gen_unprotected_key(gpg.clone());
+
+        let result: Vec<ListKeyResult> = list_keys(gpg.clone(), true, false);
+        
+        let result: Result<CmdResult, GPGError> = gpg.sign_key(
+            result[0].keyid.clone(), 
+            result[1].keyid.clone(), 
+            None, 
+            None
+        );
+        
+        assert!(matches!(result.unwrap_err().error_type, GPGErrorType::GPGProcessError(_)));
+        assert_eq!(list_keys(gpg, false, true)[1].sigs.len(), 1);
+    
         cleanup_after_tests(name);
     }
 }
