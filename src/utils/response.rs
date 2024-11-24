@@ -52,7 +52,18 @@ impl CmdResult {
         self.status_message = Some(value.to_string());
 
         if keyword == "FAILURE" {
-            self.success = false;
+            // for export secret key, there can be failure at the end if there are 1 or more key no exported due to passphrase
+            // in this case if there are any key that exported even just partially, we should still consider it as success
+            // for it to not export anything, there will be gpg: WARNING: nothing exported in the output
+            if self.operation == Operation::ExportSecretKey {
+                if self.raw_data.as_ref().unwrap().contains("WARNING: nothing exported") {
+                    self.success = false;
+                } else {
+                    self.success = true;
+                }
+            } else{
+                self.success = false;
+            }
         } else if keyword == "BADSIG" {
             self.success = false;
             self.status = Some("bad signature".to_string());

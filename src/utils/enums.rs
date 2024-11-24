@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Operation {
     NotSet,
     Verify, // this means verify if gpg was installed and is working, gpg operation verify file was under another naming
