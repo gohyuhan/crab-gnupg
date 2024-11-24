@@ -1,12 +1,14 @@
 use std::collections::HashMap;
 use std::env;
 use std::fs::File;
+use std::io::Read;
 use std::path::PathBuf;
 
 use chrono::Local;
 
 use crate::process::handle_cmd_io;
 use crate::utils::enums::{Operation, TrustLevel};
+use crate::utils::utils::get_file_obj;
 use crate::utils::{
     errors::{GPGError, GPGErrorType},
     response::{CmdResult, ListKeyResult},
@@ -270,8 +272,38 @@ impl GPG {
     //*******************************************************
     pub fn import_key(
         &self,
+        file: Option<File>,
+        file_path: Option<String>,
+        merge_only: bool,
+        extra_args: Option<Vec<String>>,
+    ) -> Result<CmdResult, GPGError> {
+        let file: Result<File, GPGError> = get_file_obj(file, file_path);
+        match file {
+            Ok(mut file) => {
+                let mut buffer: Vec<u8> = Vec::new();
+                let _ = file.read_to_end(&mut buffer);
+                let result: Result<CmdResult, GPGError> = self.import_key_file_buffer(
+                    buffer, 
+                    merge_only, 
+                    extra_args);
+                match result {
+                    Ok(result) => {
+                        return Ok(result);
+                    }
+                    Err(e) => {
+                        return Err(e);
+                    }
+                }
+            }
+            Err(e)=>{
+                return Err(e);
+            }
+        }
+    }
+
+    fn import_key_file_buffer(
+        &self,
         key_buffer: Vec<u8>,
-        passphrase: Option<String>,
         merge_only: bool,
         extra_args: Option<Vec<String>>,
     ) -> Result<CmdResult, GPGError> {
@@ -287,7 +319,7 @@ impl GPG {
         };
         let result: Result<CmdResult, GPGError> = handle_cmd_io(
             Some(args),
-            passphrase,
+            None,
             self.version,
             self.homedir.clone(),
             self.options.clone(),
