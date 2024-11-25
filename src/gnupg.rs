@@ -100,11 +100,11 @@ impl GPG {
         }
     }
 
-    //*******************************************************
+    //#######################################################
 
     //    FUNCTION BELOW RELATED TO GPG VARIOUS OPERATIONS
 
-    //*******************************************************
+    //#######################################################
 
     //*******************************************************
 
@@ -263,6 +263,63 @@ impl GPG {
                 return Err(e);
             }
         }
+    }
+
+    //*******************************************************
+
+    //                   DELETE KEY
+
+    //*******************************************************
+    pub fn delete_keys(
+        &self,
+        mut fingerprints: Vec<String>,
+        is_secret: bool,
+        is_subkey: bool,
+        passphrase: Option<String>,
+    ) -> Result<CmdResult, GPGError> {
+        // fingerprints: list of fingerprints to delete
+        // is_secret: if true, delete secret keys only 
+        // is_subkey: if true, only delete subkeys
+        // passphrase: passphrase for passphrase protected secret keys
+
+        // NOTE: delete both public and secret key by default
+        // NOTE: If the fingerprint is for subkeys, but is_subkey was not set to true, it will remove the parent key also,
+        //       also deletion of 
+
+        let mut mode:String = "secret-and-public-key".to_string();
+        if is_secret {
+            mode = "secret-keys".to_string();
+        }
+        let mut args: Vec<String> = vec![
+            "--yes".to_string(),
+            format!("--delete-{}", mode),
+        ];
+
+        if is_subkey{
+            let mut subkey_fingerprints: Vec<String> = Vec::new();
+            for f_p in fingerprints{
+                subkey_fingerprints.push(format!("{}!", f_p));
+            }
+            args.append(&mut subkey_fingerprints);
+        } else {
+            args.append(&mut fingerprints);
+        }
+        let result:Result<CmdResult, GPGError> = handle_cmd_io(
+            Some(args),
+            passphrase,
+            self.version,
+            self.homedir.clone(),
+            self.options.clone(),
+            self.env.clone(),
+            None,
+            None,
+            None,
+            false,
+            false,
+            Operation::DeleteKey,
+        );
+
+        return result;
     }
 
     //*******************************************************
