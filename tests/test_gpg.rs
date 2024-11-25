@@ -25,18 +25,20 @@ use crab_gnupg::{
 #[cfg(test)]
 mod tests {
 
+    use std::{clone, result};
+
     use super::*;
 
     fn get_homedir(name:&str) -> String {
         let home_dir = std::env::var("HOME").unwrap();
 
-        return PathBuf::from(home_dir).join(format!("crab_gpg_test/gnupg_test_{}/test_home", name)).to_string_lossy().to_string();
+        return PathBuf::from(home_dir).join(format!("gnupg_test_{}/test_home", name)).to_string_lossy().to_string();
     }
     
     fn get_output_dir(name:&str) -> String {
         let home_dir = std::env::var("HOME").unwrap();
 
-        return PathBuf::from(home_dir).join(format!("crab_gpg_test/gnupg_test_{}/test_output", name)).to_string_lossy().to_string();
+        return PathBuf::from(home_dir).join(format!("gnupg_test_{}/test_output", name)).to_string_lossy().to_string();
     }
 
     fn generate_random_string() -> String {
@@ -67,6 +69,20 @@ mod tests {
         let _ = gpg.gen_key(None, None);
     }
 
+    fn gen_unprotected_key_with_subkeys(gpg:GPG){
+        let mut args: HashMap<String, String> = HashMap::new();
+        args.insert("Subkey-Type".to_string(), "RSA".to_string());
+        args.insert("Subkey-Length".to_string(), "2048".to_string());
+        let _ = gpg.gen_key(None, Some(args));
+    }
+
+    fn gen_protected_key_with_subkeys(gpg:GPG){
+        let mut args: HashMap<String, String> = HashMap::new();
+        args.insert("Subkey-Type".to_string(), "RSA".to_string());
+        args.insert("Subkey-Length".to_string(), "2048".to_string());
+        let _ = gpg.gen_key(Some(get_key_passphrass()), Some(args));
+    }
+
     fn list_keys(gpg:GPG, secret:bool, sig:bool) -> Vec<ListKeyResult> {
         let list_key_result:Result<Vec<ListKeyResult>, GPGError> = gpg.list_keys(secret, None, sig);
         let list_key_result_unwrap: Vec<ListKeyResult> = list_key_result.unwrap();
@@ -75,7 +91,7 @@ mod tests {
 
     fn cleanup_after_tests(name:&str) {
         let home_dir = std::env::var("HOME").unwrap();
-        let test_dir = PathBuf::from(home_dir).join(format!("crab_gpg_test/gnupg_test_{}", name)).to_string_lossy().to_string();
+        let test_dir = PathBuf::from(home_dir).join(format!("gnupg_test_{}", name)).to_string_lossy().to_string();
     
         // Perform cleanup here
         if let Err(e) = remove_dir_all(test_dir) {
@@ -171,6 +187,121 @@ mod tests {
         cleanup_after_tests(name);
     }
 
+    #[test]
+    fn test_delete_keys(){
+        // test deleting keys
+
+        let name:String  = generate_random_string();
+        let name: &str = name.as_str();
+
+        let gpg: GPG = get_gpg_init(name);
+        gen_unprotected_key(gpg.clone());
+        let result:Result<Vec<ListKeyResult>, GPGError>  = gpg.list_keys(false, None, false);
+        let fingerprint: String = result.unwrap()[0].fingerprint.clone();
+
+        let result:Result<CmdResult, GPGError>  = gpg.delete_keys(vec![fingerprint], false, false, None);
+        assert_eq!(result.unwrap().is_success(), true);
+        assert_eq!(gpg.list_keys(false, None, false).unwrap().len(), 0);
+        assert_eq!(gpg.list_keys(true, None, false).unwrap().len(), 0);
+
+
+        cleanup_after_tests(name);
+    }
+
+    #[test]
+    fn test_delete_keys_secret_keys_only(){
+        // test deleting secret keys only 
+
+        let name:String  = generate_random_string();
+        let name: &str = name.as_str();
+
+        let gpg: GPG = get_gpg_init(name);
+        gen_unprotected_key(gpg.clone());
+        let result:Result<Vec<ListKeyResult>, GPGError>  = gpg.list_keys(true, None, false);
+        let fingerprint: String = result.unwrap()[0].fingerprint.clone();
+
+        let result:Result<CmdResult, GPGError>  = gpg.delete_keys(vec![fingerprint], true, false, None);
+        assert_eq!(result.unwrap().is_success(), true);
+        assert_eq!(gpg.list_keys(false, None, false).unwrap().len(), 1);
+        assert_eq!(gpg.list_keys(true, None, false).unwrap().len(), 0);
+
+
+        cleanup_after_tests(name);
+    }
+
+    #[test]
+    fn test_delete_keys_passphrase_protected_secret_keys_only(){
+        // test deleting secret keys only ( pasphrase proctected )
+
+        let name:String  = generate_random_string();
+        let name: &str = name.as_str();
+
+        let gpg: GPG = get_gpg_init(name);
+        gen_protected_key(gpg.clone());
+        let result:Result<Vec<ListKeyResult>, GPGError>  = gpg.list_keys(true, None, false);
+        let fingerprint: String = result.unwrap()[0].fingerprint.clone();
+
+        let result:Result<CmdResult, GPGError>  = gpg.delete_keys(vec![fingerprint], true, false, Some(get_key_passphrass()));
+        assert_eq!(result.unwrap().is_success(), true);
+        assert_eq!(gpg.list_keys(false, None, false).unwrap().len(), 1);
+        assert_eq!(gpg.list_keys(true, None, false).unwrap().len(), 0);
+
+
+        cleanup_after_tests(name);
+    }
+
+    #[test]
+    fn test_delete_subkeys(){
+        // test deleting subkeys
+
+        let name:String  = generate_random_string();
+        let name: &str = name.as_str();
+
+        let gpg: GPG = get_gpg_init(name);
+        gen_unprotected_key_with_subkeys(gpg.clone());
+        let result:Result<Vec<ListKeyResult>, GPGError>  = gpg.list_keys(false, None, false);
+        let fingerprint: String = result.unwrap()[0].subkeys[0].fingerprint.clone();
+        assert_eq!(gpg.list_keys(false, None, false).unwrap()[0].subkeys.len(), 1);
+        assert_eq!(gpg.list_keys(true, None, false).unwrap()[0].subkeys.len(), 1);
+
+        let result:Result<CmdResult, GPGError>  = gpg.delete_keys(vec![fingerprint], false, true, None);
+        assert_eq!(result.unwrap().is_success(), true);
+        assert_eq!(gpg.list_keys(false, None, false).unwrap()[0].subkeys.len(), 0);
+        assert_eq!(gpg.list_keys(true, None, false).unwrap()[0].subkeys.len(), 0);
+
+        cleanup_after_tests(name);
+    }
+
+    #[test]
+    fn test_delete_keys_not_found_fingerprint(){
+        // test deleting with fingerprint not found in local
+
+        let name:String  = generate_random_string();
+        let name: &str = name.as_str();
+
+        let gpg: GPG = get_gpg_init(name);
+        gen_unprotected_key(gpg.clone());
+        let result:Result<Vec<ListKeyResult>, GPGError>  = gpg.list_keys(true, None, false);
+        let mut fingerprint: String = result.unwrap()[0].fingerprint.clone();
+
+        if let Some(char) = fingerprint.pop(){
+            if char == '1'{
+                fingerprint.push('2');
+            }else{
+                fingerprint.push('1');
+            }
+        }
+
+        let result:Result<CmdResult, GPGError>  = gpg.delete_keys(vec![fingerprint], false, false, None);
+        assert!(matches!(result.unwrap_err().error_type, GPGErrorType::GPGProcessError(_)));
+        assert_eq!(gpg.list_keys(false, None, false).unwrap().len(), 1);
+        assert_eq!(gpg.list_keys(true, None, false).unwrap().len(), 1);
+
+
+        cleanup_after_tests(name);
+    }
+
+    
     #[test]
     fn test_export_public_key(){
         // test exporting the public key

@@ -144,7 +144,6 @@ pub fn start_process(
         generate_cmd_args(cmd_args, passphrase, version, homedir.clone(), options);
 
     let mut command = Command::new(&cmd_args[0]); // The first element of the vector is the command
-
     // Pass the rest of the arguments to the command
     command.args(&cmd_args[1..]);
     if env.is_some() {
@@ -211,7 +210,6 @@ fn read_cmd_output(mut stdout: ChildStdout, result: Arc<Mutex<&mut CmdResult>>) 
         output_lines.push(line_string.to_string());
     }
     result.lock().unwrap().set_raw_data(output_lines.join(""));
-    println!("output_lines: \n {}", output_lines.join(""));
     drop(stdout);
 }
 

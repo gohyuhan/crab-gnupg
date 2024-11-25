@@ -6,6 +6,7 @@ pub enum Operation {
     Verify, // this means verify if gpg was installed and is working, gpg operation verify file was under another naming
     GenerateKey,
     ListKey,
+    DeleteKey,
     SearchKey,
     ImportKey,
     TrustKey,
@@ -25,6 +26,7 @@ impl Display for Operation {
             Operation::Verify => write!(f, "Verify"),
             Operation::GenerateKey => write!(f, "GenerateKey"),
             Operation::ListKey => write!(f, "ListKey"),
+            Operation::DeleteKey => write!(f, "DeleteKey"),
             Operation::SearchKey => write!(f, "SearchKey"),
             Operation::ImportKey => write!(f, "ImportKey"),
             Operation::TrustKey => write!(f, "TrustKey"),

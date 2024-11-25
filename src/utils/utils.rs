@@ -90,9 +90,6 @@ pub fn get_gpg_version(result: &CmdResult) -> (f32, String) {
 
         return (0.0, "0.0.0".to_string());
     }
-    // if no version is found, return 0.0.0
-    // should take into account also that the version
-    // might not be in the same format for every version
     return (0.0, "0.0.0".to_string());
 }
 
