@@ -819,7 +819,6 @@ impl GPG {
             decrypt_option.output,
             decrypt_option.extra_args,
         );
-
         let result: Result<CmdResult, GPGError> = handle_cmd_io(
             Some(args),
             pass,
@@ -1189,14 +1188,14 @@ impl DecryptOption {
     pub fn default(
         file: Option<File>,
         file_path: Option<String>,
-        recipient: Option<String>,
+        recipient: String,
         key_passphrase: Option<String>,
         output: Option<String>,
     ) -> DecryptOption {
         return DecryptOption {
             file: file,
             file_path: file_path,
-            recipient: recipient,
+            recipient: Some(recipient),
             always_trust: true,
             passphrase: None,
             key_passphrase: key_passphrase,
@@ -1209,7 +1208,7 @@ impl DecryptOption {
     pub fn with_symmetric(
         file: Option<File>,
         file_path: Option<String>,
-        passphrase: Option<String>,
+        passphrase: String,
         output: Option<String>,
     ) -> DecryptOption {
         return DecryptOption {
@@ -1217,7 +1216,7 @@ impl DecryptOption {
             file_path: file_path,
             recipient: None,
             always_trust: true,
-            passphrase: passphrase,
+            passphrase: Some(passphrase),
             key_passphrase: None,
             output: output,
             extra_args: None,
