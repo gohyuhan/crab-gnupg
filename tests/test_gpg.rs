@@ -1,6 +1,9 @@
 use std::{
     collections::HashMap,
-    fs::remove_dir_all,
+    fs::{
+        remove_dir_all,
+        File
+    },
     path::{
         PathBuf,
         Path
@@ -13,7 +16,12 @@ use rand::{thread_rng, Rng};
 use rand::distributions::Alphanumeric;
 
 use crab_gnupg::{
-    gnupg::GPG,
+    gnupg::{
+        GPG,
+        EncryptOption,
+        DecryptOption,
+        SignOption
+    },
     utils::{
         errors::{GPGError, GPGErrorType},
         response::{CmdResult, ListKeyResult},
@@ -24,8 +32,6 @@ use crab_gnupg::{
 
 #[cfg(test)]
 mod tests {
-
-    use std::{clone, result};
 
     use super::*;
 
@@ -87,6 +93,21 @@ mod tests {
         let list_key_result:Result<Vec<ListKeyResult>, GPGError> = gpg.list_keys(secret, None, sig);
         let list_key_result_unwrap: Vec<ListKeyResult> = list_key_result.unwrap();
         return list_key_result_unwrap;
+    }
+
+    fn gen_encrypt_default_option(file:File, recipients:Vec<String>, output:Option<String>) -> EncryptOption{
+        let options: EncryptOption = EncryptOption::default(Some(file), None, recipients, output);
+        return options;
+    }
+
+    fn gen_encrypt_symmetric_option(file:File, symmetric_algo: Option<String>, passphrase: String, output:Option<String>) -> EncryptOption{
+        let options: EncryptOption = EncryptOption::with_symmetric(Some(file), None, symmetric_algo, passphrase, output);
+        return options;
+    }
+
+    fn gen_encrypt_key_and_symmetric_option(file:File, recipients:Vec<String>, symmetric_algo: Option<String>, passphrase: String, output:Option<String>) -> EncryptOption{
+        let options: EncryptOption = EncryptOption::with_key_and_symmetric(Some(file), None, Some(recipients), symmetric_algo, passphrase, output);
+        return options;
     }
 
     fn cleanup_after_tests(name:&str) {
@@ -768,6 +789,183 @@ mod tests {
         
         assert!(matches!(result.unwrap_err().error_type, GPGErrorType::GPGProcessError(_)));
         assert_eq!(list_keys(gpg, false, true)[1].sigs.len(), 1);
+    
+        cleanup_after_tests(name);
+    }
+
+    
+    #[test]
+    fn test_encrypt_file(){
+        // test encrypting file with just key (default)
+
+        let name:String  = generate_random_string();
+        let name: &str = name.as_str();
+
+        let gpg: GPG = get_gpg_init(name);
+        gen_protected_key(gpg.clone());
+
+        let mut file = tempfile().unwrap();
+        writeln!(file, "testing encryption").unwrap();
+
+        let result: Vec<ListKeyResult> = list_keys(gpg.clone(), true, false);
+        let output: String = PathBuf::from(get_output_dir(name)).join("test_encrypt.txt").to_string_lossy().to_string();
+        let option = gen_encrypt_default_option(file, vec![result[0].keyid.clone()], Some(output.clone()));
+
+        let result: Result<CmdResult, GPGError> = gpg.encrypt(option);
+        assert_eq!(result.unwrap().is_success(), true);
+        assert_eq!(Path::new(&output).exists(), true);
+    
+        cleanup_after_tests(name);
+    }
+
+    #[test]
+    fn test_encrypt_file_symmetric(){
+        // test encrypting file with just passphrase (symmetric)
+
+        let name:String  = generate_random_string();
+        let name: &str = name.as_str();
+
+        let gpg: GPG = get_gpg_init(name);
+        gen_protected_key(gpg.clone());
+
+        let mut file = tempfile().unwrap();
+        writeln!(file, "testing encryption").unwrap();
+
+        let output: String = PathBuf::from(get_output_dir(name)).join("test_encrypt.txt").to_string_lossy().to_string();
+        let option = gen_encrypt_symmetric_option(file, None, "1234".to_string(), Some(output.clone()));
+
+        let result: Result<CmdResult, GPGError> = gpg.encrypt(option);
+        assert_eq!(result.unwrap().is_success(), true);
+        assert_eq!(Path::new(&output).exists(), true);
+    
+        cleanup_after_tests(name);
+    }
+
+    #[test]
+    fn test_encrypt_file_key_and_symmetric(){
+        // test encrypting file with both key and passphrase (key and symmetric)
+
+        let name:String  = generate_random_string();
+        let name: &str = name.as_str();
+
+        let gpg: GPG = get_gpg_init(name);
+        gen_protected_key(gpg.clone());
+
+        let mut file = tempfile().unwrap();
+        writeln!(file, "testing encryption").unwrap();
+
+        let result: Vec<ListKeyResult> = list_keys(gpg.clone(), true, false);
+        let output: String = PathBuf::from(get_output_dir(name)).join("test_encrypt.txt").to_string_lossy().to_string();
+        let option = gen_encrypt_key_and_symmetric_option(file, vec![result[0].keyid.clone()], None, "1234".to_string(), Some(output.clone()));
+
+        let result: Result<CmdResult, GPGError> = gpg.encrypt(option);
+        assert_eq!(result.unwrap().is_success(), true);
+        assert_eq!(Path::new(&output).exists(), true);
+    
+        cleanup_after_tests(name);
+    }
+
+    #[test]
+    fn test_encrypt_file_default_fail_no_receipient(){
+        // test encrypting file with just key (default) but without providing recipient (list of key id)
+
+        let name:String  = generate_random_string();
+        let name: &str = name.as_str();
+
+        let gpg: GPG = get_gpg_init(name);
+        gen_protected_key(gpg.clone());
+
+        let mut file = tempfile().unwrap();
+        writeln!(file, "testing encryption").unwrap();
+
+        let output: String = PathBuf::from(get_output_dir(name)).join("test_encrypt.txt").to_string_lossy().to_string();
+        let option = EncryptOption{
+            file: Some(file),
+            file_path: None,
+            recipients: None,
+            sign: false,
+            sign_key: None,
+            symmetric: false,
+            symmetric_algo: None,
+            always_trust: true,
+            passphrase: None,
+            output: Some(output.clone()),
+            extra_args: None,
+        };
+
+        let result: Result<CmdResult, GPGError> = gpg.encrypt(option);
+        assert!(matches!(result.unwrap_err().error_type, GPGErrorType::InvalidArgumentError(_)));
+        assert_eq!(Path::new(&output).exists(), false);
+    
+        cleanup_after_tests(name);
+    }
+
+    #[test]
+    fn test_encrypt_file_symmetric_fail_no_passphrase(){
+        // test encrypting file with just passphrase (symmetric) but without providing passphrase
+
+        let name:String  = generate_random_string();
+        let name: &str = name.as_str();
+
+        let gpg: GPG = get_gpg_init(name);
+        gen_protected_key(gpg.clone());
+
+        let mut file = tempfile().unwrap();
+        writeln!(file, "testing encryption").unwrap();
+
+        let output: String = PathBuf::from(get_output_dir(name)).join("test_encrypt.txt").to_string_lossy().to_string();
+        let option = EncryptOption{
+            file: Some(file),
+            file_path: None,
+            recipients: None,
+            sign: false,
+            sign_key: None,
+            symmetric: false,
+            symmetric_algo: None,
+            always_trust: true,
+            passphrase: None,
+            output: Some(output.clone()),
+            extra_args: None,
+        };
+
+        let result: Result<CmdResult, GPGError> = gpg.encrypt(option);
+        assert!(matches!(result.unwrap_err().error_type, GPGErrorType::InvalidArgumentError(_)));
+        assert_eq!(Path::new(&output).exists(), false);
+    
+        cleanup_after_tests(name);
+    }
+
+    #[test]
+    fn test_encrypt_file_key_and_symmetric_fail_no_passphrase(){
+        // test encrypting file with both key and passphrase (symmetric) but without providing both
+
+        let name:String  = generate_random_string();
+        let name: &str = name.as_str();
+
+        let gpg: GPG = get_gpg_init(name);
+        gen_protected_key(gpg.clone());
+
+        let mut file = tempfile().unwrap();
+        writeln!(file, "testing encryption").unwrap();
+
+        let output: String = PathBuf::from(get_output_dir(name)).join("test_encrypt.txt").to_string_lossy().to_string();
+        let option = EncryptOption{
+            file: Some(file),
+            file_path: None,
+            recipients: None,
+            sign: false,
+            sign_key: None,
+            symmetric: false,
+            symmetric_algo: None,
+            always_trust: true,
+            passphrase: None,
+            output: Some(output.clone()),
+            extra_args: None,
+        };
+
+        let result: Result<CmdResult, GPGError> = gpg.encrypt(option);
+        assert!(matches!(result.unwrap_err().error_type, GPGErrorType::InvalidArgumentError(_)));
+        assert_eq!(Path::new(&output).exists(), false);
     
         cleanup_after_tests(name);
     }

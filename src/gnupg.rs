@@ -1057,30 +1057,30 @@ impl GPG {
 #[derive(Debug)]
 pub struct EncryptOption {
     // file: file object
-    file: Option<File>,
+    pub file: Option<File>,
     // file_path: path to file
-    file_path: Option<String>,
+    pub file_path: Option<String>,
     // receipients: list of receipients keyid
-    recipients: Option<Vec<String>>,
+    pub recipients: Option<Vec<String>>,
     // sign: whether to sign the file
-    sign: bool,
+    pub sign: bool,
     // sign_key: keyid to sign the file
-    sign_key: Option<String>,
+    pub sign_key: Option<String>,
     // symmetric: whether to encrypt symmetrically ( will not encrypt using keyid(s)) [passphrase must be provided if symmetric is true]
     //            the file will be both encrypted with the keyid(s) and symmetrically
-    symmetric: bool,
+    pub symmetric: bool,
     // symmetric_algo: symmetric algorithm to use [if not provided a highly ranked cipher willl be chosen]
-    symmetric_algo: Option<String>,
+    pub symmetric_algo: Option<String>,
     // always_trust: whether to always trust keys
-    always_trust: bool,
+    pub always_trust: bool,
     // passphrase: passphrase to use for symmetric encryption [required if symmetric is true]
-    passphrase: Option<String>,
+    pub passphrase: Option<String>,
     // output: path to write the encrypted output,
     //         will use the default output dir set in GPG if not provided and
     //         with file name as [<encryption_type>_encrypted_file_<datetime>.<extension>]
-    output: Option<String>,
+    pub output: Option<String>,
     // extra_args: extra arguments to pass to gpg
-    extra_args: Option<Vec<String>>,
+    pub extra_args: Option<Vec<String>>,
 }
 
 impl EncryptOption {
@@ -1088,13 +1088,13 @@ impl EncryptOption {
     pub fn default(
         file: Option<File>,
         file_path: Option<String>,
-        recipients: Option<Vec<String>>,
+        recipients: Vec<String>,
         output: Option<String>,
     ) -> EncryptOption {
         return EncryptOption {
             file: file,
             file_path: file_path,
-            recipients: recipients,
+            recipients: Some(recipients),
             sign: false,
             sign_key: None,
             symmetric: false,
@@ -1111,7 +1111,7 @@ impl EncryptOption {
         file: Option<File>,
         file_path: Option<String>,
         symmetric_algo: Option<String>,
-        passphrase: Option<String>,
+        passphrase: String,
         output: Option<String>,
     ) -> EncryptOption {
         return EncryptOption {
@@ -1123,7 +1123,7 @@ impl EncryptOption {
             symmetric: true,
             symmetric_algo: symmetric_algo,
             always_trust: true,
-            passphrase: passphrase,
+            passphrase: Some(passphrase),
             output: output,
             extra_args: None,
         };
@@ -1135,7 +1135,7 @@ impl EncryptOption {
         file_path: Option<String>,
         recipients: Option<Vec<String>>,
         symmetric_algo: Option<String>,
-        passphrase: Option<String>,
+        passphrase: String,
         output: Option<String>,
     ) -> EncryptOption {
         return EncryptOption {
@@ -1147,7 +1147,7 @@ impl EncryptOption {
             symmetric: true,
             symmetric_algo: symmetric_algo,
             always_trust: true,
-            passphrase: passphrase,
+            passphrase: Some(passphrase),
             output: output,
             extra_args: None,
         };
@@ -1165,22 +1165,22 @@ impl EncryptOption {
 #[derive(Debug)]
 pub struct DecryptOption {
     // file: file object
-    file: Option<File>,
+    pub file: Option<File>,
     // file_path: path to file
-    file_path: Option<String>,
+    pub file_path: Option<String>,
     // recipients: recipients keyid
-    recipient: Option<String>,
+    pub recipient: Option<String>,
     // always_trust: whether to always trust keys
-    always_trust: bool,
+    pub always_trust: bool,
     // passphrase: passphrase if file if symmetric encrypted [required if it was symmetric encrypted]
-    passphrase: Option<String>,
+    pub passphrase: Option<String>,
     // key_passphrase: passphrase if file is key encrypted and need passphrase protected private key to decrypt
-    key_passphrase: Option<String>,
+    pub key_passphrase: Option<String>,
     // output: path to write the decrypted output,
     //         will use the default output dir with file name as [decrypted_file_<datetime>.<extension>] set in GPG if not provided
-    output: Option<String>,
+    pub output: Option<String>,
     // extra_args: extra arguments to pass to gpg
-    extra_args: Option<Vec<String>>,
+    pub extra_args: Option<Vec<String>>,
 }
 
 impl DecryptOption {
@@ -1236,24 +1236,24 @@ impl DecryptOption {
 #[derive(Debug)]
 pub struct SignOption {
     // file: file object
-    file: Option<File>,
+    pub file: Option<File>,
     // file_path: path to file
-    file_path: Option<String>,
+    pub file_path: Option<String>,
     // recipients: keyid for signing
-    keyid: Option<String>,
+    pub keyid: Option<String>,
     // key_passphrase: required for passphrase protected private key
-    key_passphrase: Option<String>,
+    pub key_passphrase: Option<String>,
     // clearsign: Whether to use clear signing
-    clearsign: bool,
+    pub clearsign: bool,
     // detach: Whether to produce a detached signature.
-    detach: bool,
+    pub detach: bool,
     // output: path to write the detached signature or embedded sign file
     //         if output not specified:
     //           will use the default output dir with file name as [<sign_type>_<datetime>.<sig or gpg>] set in GPG if
     //           file is provided instead of file_path or detached signature
-    output: Option<String>,
+    pub output: Option<String>,
     // extra_args: extra arguments to pass to gpg
-    extra_args: Option<Vec<String>>,
+    pub extra_args: Option<Vec<String>>,
 }
 
 impl SignOption {
