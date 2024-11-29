@@ -8,7 +8,7 @@ use std::{
         PathBuf,
         Path
     },
-    io::Write
+    io::{Read, Write},
 };
 
 use tempfile::tempfile;
@@ -32,8 +32,6 @@ use crab_gnupg::{
 
 #[cfg(test)]
 mod tests {
-
-    use std::io::{Read, Seek};
 
     use super::*;
 
@@ -674,7 +672,6 @@ mod tests {
             }
         }
         
-        println!("KEYID {:?}", keyid);
         let result: Result<CmdResult, GPGError> = gpg.sign_key(
             keyid, 
             result[0].keyid.clone(), 
@@ -819,7 +816,6 @@ mod tests {
         let mut file = tempfile().unwrap();
         writeln!(file, "testing encryption").unwrap();
         file.flush().unwrap();
-        file.rewind().unwrap();
 
         let result: Vec<ListKeyResult> = list_keys(gpg.clone(), true, false);
         let output: String = PathBuf::from(get_output_dir(name)).join("test_encrypt.txt").to_string_lossy().to_string();
@@ -845,7 +841,6 @@ mod tests {
         let mut file = tempfile().unwrap();
         writeln!(file, "testing encryption").unwrap();
         file.flush().unwrap();
-        file.rewind().unwrap();
 
         let output: String = PathBuf::from(get_output_dir(name)).join("test_encrypt.txt").to_string_lossy().to_string();
         let option = gen_encrypt_symmetric_option(file, None, "1234".to_string(), Some(output.clone()));
@@ -870,7 +865,6 @@ mod tests {
         let mut file = tempfile().unwrap();
         writeln!(file, "testing encryption").unwrap();
         file.flush().unwrap();
-        file.rewind().unwrap();
 
         let result: Vec<ListKeyResult> = list_keys(gpg.clone(), true, false);
         let output: String = PathBuf::from(get_output_dir(name)).join("test_encrypt.txt").to_string_lossy().to_string();
@@ -896,7 +890,6 @@ mod tests {
         let mut file = tempfile().unwrap();
         writeln!(file, "testing encryption").unwrap();
         file.flush().unwrap();
-        file.rewind().unwrap();
 
         let output: String = PathBuf::from(get_output_dir(name)).join("test_encrypt.txt").to_string_lossy().to_string();
         let option = EncryptOption{
@@ -933,7 +926,6 @@ mod tests {
         let mut file = tempfile().unwrap();
         writeln!(file, "testing encryption").unwrap();
         file.flush().unwrap();
-        file.rewind().unwrap();
 
         let output: String = PathBuf::from(get_output_dir(name)).join("test_encrypt.txt").to_string_lossy().to_string();
         let option = EncryptOption{
@@ -970,7 +962,6 @@ mod tests {
         let mut file = tempfile().unwrap();
         writeln!(file, "testing encryption").unwrap();
         file.flush().unwrap();
-        file.rewind().unwrap();
 
         let output: String = PathBuf::from(get_output_dir(name)).join("test_encrypt.txt").to_string_lossy().to_string();
         let option = EncryptOption{
@@ -1007,7 +998,6 @@ mod tests {
         let mut file = tempfile().unwrap();
         write!(file, "testing decryption").unwrap();
         file.flush().unwrap();
-        file.rewind().unwrap();
 
         let key_result: Vec<ListKeyResult> = list_keys(gpg.clone(), true, false);
         let output: String = PathBuf::from(get_output_dir(name)).join("test_encrypt.txt").to_string_lossy().to_string();
@@ -1044,7 +1034,6 @@ mod tests {
         let mut file = tempfile().unwrap();
         write!(file, "testing decryption").unwrap();
         file.flush().unwrap();
-        file.rewind().unwrap();
 
         let output: String = PathBuf::from(get_output_dir(name)).join("test_encrypt.txt").to_string_lossy().to_string();
         let option = gen_encrypt_symmetric_option(file, None, "1234".to_string(), Some(output.clone()));

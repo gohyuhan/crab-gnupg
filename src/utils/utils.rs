@@ -1,6 +1,6 @@
-use std::fs::{metadata, set_permissions, File};
-use std::os::unix::fs::PermissionsExt;
-use std::path::{Path, PathBuf};
+use std::{
+    fs::{metadata, set_permissions, File}, io::{Seek}, os::unix::fs::PermissionsExt, path::{Path, PathBuf}
+};
 
 use regex::Regex;
 
@@ -95,7 +95,9 @@ pub fn get_gpg_version(result: &CmdResult) -> (f32, String) {
 
 pub fn get_file_obj(file: Option<File>, file_path: Option<String>) -> Result<File, GPGError> {
     if file.is_some() {
-        return Ok(file.unwrap());
+        let mut file = file.unwrap();
+        file.rewind().unwrap();
+        return Ok(file);
     } else if file_path.is_some() {
         let file_path = file_path.unwrap();
         let file = File::open(file_path);
@@ -106,8 +108,9 @@ pub fn get_file_obj(file: Option<File>, file_path: Option<String>) -> Result<Fil
                 None,
             ));
         }
-
-        return Ok(file.unwrap());
+        let mut file = file.unwrap();
+        file.rewind().unwrap();
+        return Ok(file);
     }
 
     return Err(GPGError::new(
