@@ -82,13 +82,6 @@ mod tests {
         let _ = gpg.gen_key(None, Some(args));
     }
 
-    fn gen_protected_key_with_subkeys(gpg:GPG){
-        let mut args: HashMap<String, String> = HashMap::new();
-        args.insert("Subkey-Type".to_string(), "RSA".to_string());
-        args.insert("Subkey-Length".to_string(), "2048".to_string());
-        let _ = gpg.gen_key(Some(get_key_passphrass()), Some(args));
-    }
-
     fn list_keys(gpg:GPG, secret:bool, sig:bool) -> Vec<ListKeyResult> {
         let list_key_result:Result<Vec<ListKeyResult>, GPGError> = gpg.list_keys(secret, None, sig);
         let list_key_result_unwrap: Vec<ListKeyResult> = list_key_result.unwrap();
@@ -117,6 +110,16 @@ mod tests {
 
     fn gen_decrypt_passphrase_option(file_path:String, passphrase: String, output:Option<String>) -> DecryptOption{
         let options: DecryptOption = DecryptOption::with_symmetric(None, Some(file_path), passphrase, output);
+        return options;
+    }
+
+    fn gen_sign_default_option(file:File, recipient:String, key_passphrase: Option<String>, output:Option<String>) -> SignOption{
+        let options: SignOption = SignOption::default(Some(file), None, recipient, key_passphrase, output);
+        return options;
+    }
+
+    fn gen_sign_detached_option(file:File, recipient:String, key_passphrase: Option<String>, output:Option<String>) -> SignOption{
+        let options: SignOption = SignOption::detached(Some(file), None, recipient, key_passphrase, output);
         return options;
     }
 
@@ -1138,6 +1141,106 @@ mod tests {
         let result = gpg.decrypt(option);
         assert!(matches!(result.unwrap_err().error_type, GPGErrorType::GPGProcessError(_)));
         assert_eq!(Path::new(&decrypt_output).exists(), false);
+
+        cleanup_after_tests(name);
+    }
+
+    #[test]
+    fn test_sign_file_embedded_signature(){
+        // test signing file with embedded signature
+
+        let name:String  = generate_random_string();
+        let name: &str = name.as_str();
+
+        let gpg: GPG = get_gpg_init(name);
+        gen_protected_key(gpg.clone());
+
+        let mut file = tempfile().unwrap();
+        write!(file, "testing signing").unwrap();
+        file.flush().unwrap();
+
+        let key_result: Vec<ListKeyResult> = list_keys(gpg.clone(), true, false);
+        let output: String = PathBuf::from(get_output_dir(name)).join("test_sign.txt").to_string_lossy().to_string();
+        let option: SignOption = gen_sign_default_option(file, key_result[0].keyid.clone(), Some(get_key_passphrass()), Some(output.clone()));
+
+        let result: Result<CmdResult, GPGError> = gpg.sign(option);
+        assert_eq!(result.unwrap().is_success(), true);
+        assert_eq!(Path::new(&output).exists(), true);
+
+        cleanup_after_tests(name);
+    }
+
+    #[test]
+    fn test_sign_file_embedded_signature_fail(){
+        // test signing file with embedded signature, wrong passphrase (fail)
+
+        let name:String  = generate_random_string();
+        let name: &str = name.as_str();
+
+        let gpg: GPG = get_gpg_init(name);
+        gen_protected_key(gpg.clone());
+
+        let mut file = tempfile().unwrap();
+        write!(file, "testing signing").unwrap();
+        file.flush().unwrap();
+
+        let key_result: Vec<ListKeyResult> = list_keys(gpg.clone(), true, false);
+        let output: String = PathBuf::from(get_output_dir(name)).join("test_sign.txt").to_string_lossy().to_string();
+        let option: SignOption = gen_sign_default_option(file, key_result[0].keyid.clone(), None, Some(output.clone()));
+
+        let result: Result<CmdResult, GPGError> = gpg.sign(option);
+        assert!(matches!(result.unwrap_err().error_type, GPGErrorType::GPGProcessError(_)));
+        assert_eq!(Path::new(&output).exists(), false);
+
+        cleanup_after_tests(name);
+    }
+
+    #[test]
+    fn test_sign_file_detached_signature(){
+        // test signing file with detached signature
+
+        let name:String  = generate_random_string();
+        let name: &str = name.as_str();
+
+        let gpg: GPG = get_gpg_init(name);
+        gen_protected_key(gpg.clone());
+
+        let mut file = tempfile().unwrap();
+        write!(file, "testing signing").unwrap();
+        file.flush().unwrap();
+
+        let key_result: Vec<ListKeyResult> = list_keys(gpg.clone(), true, false);
+        let output: String = PathBuf::from(get_output_dir(name)).join("signature.sig").to_string_lossy().to_string();
+        let option: SignOption = gen_sign_detached_option(file, key_result[0].keyid.clone(), Some(get_key_passphrass()), Some(output.clone()));
+
+        let result: Result<CmdResult, GPGError> = gpg.sign(option);
+        assert_eq!(result.unwrap().is_success(), true);
+        assert_eq!(Path::new(&output).exists(), true);
+
+        cleanup_after_tests(name);
+    }
+
+    #[test]
+    fn test_sign_file_detached_signature_fail(){
+        // test signing file with detached signature, wrong passphrase (fail)
+
+        let name:String  = generate_random_string();
+        let name: &str = name.as_str();
+
+        let gpg: GPG = get_gpg_init(name);
+        gen_protected_key(gpg.clone());
+
+        let mut file = tempfile().unwrap();
+        write!(file, "testing signing").unwrap();
+        file.flush().unwrap();
+
+        let key_result: Vec<ListKeyResult> = list_keys(gpg.clone(), true, false);
+        let output: String = PathBuf::from(get_output_dir(name)).join("signature.sig").to_string_lossy().to_string();
+        let option: SignOption = gen_sign_detached_option(file, key_result[0].keyid.clone(), None, Some(output.clone()));
+
+        let result: Result<CmdResult, GPGError> = gpg.sign(option);
+        assert!(matches!(result.unwrap_err().error_type, GPGErrorType::GPGProcessError(_)));
+        assert_eq!(Path::new(&output).exists(), false);
 
         cleanup_after_tests(name);
     }

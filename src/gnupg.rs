@@ -1238,7 +1238,7 @@ pub struct SignOption {
     pub file: Option<File>,
     // file_path: path to file
     pub file_path: Option<String>,
-    // recipients: keyid for signing
+    // keyid: keyid for signing
     pub keyid: Option<String>,
     // key_passphrase: required for passphrase protected private key
     pub key_passphrase: Option<String>,
@@ -1261,14 +1261,14 @@ impl SignOption {
     pub fn default(
         file: Option<File>,
         file_path: Option<String>,
-        keyid: Option<String>,
+        keyid: String,
         key_passphrase: Option<String>,
         output: Option<String>,
     ) -> SignOption {
         return SignOption {
             file: file,
             file_path: file_path,
-            keyid: keyid,
+            keyid: Some(keyid),
             key_passphrase: key_passphrase,
             clearsign: true,
             detach: false,
@@ -1281,14 +1281,14 @@ impl SignOption {
     pub fn detached(
         file: Option<File>,
         file_path: Option<String>,
-        keyid: Option<String>,
+        keyid: String,
         key_passphrase: Option<String>,
         output: Option<String>,
     ) -> SignOption {
         return SignOption {
             file: file,
             file_path: file_path,
-            keyid: keyid,
+            keyid: Some(keyid),
             key_passphrase: key_passphrase,
             clearsign: false,
             detach: true,
