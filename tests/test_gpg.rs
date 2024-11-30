@@ -1055,4 +1055,90 @@ mod tests {
 
         cleanup_after_tests(name);
     }
+
+    #[test]
+    fn test_decrypt_file_with_passphrase_or_key(){
+        // test decrypting file with passphrase
+
+        let name:String  = generate_random_string();
+        let name: &str = name.as_str();
+
+        let gpg: GPG = get_gpg_init(name);
+        gen_protected_key(gpg.clone());
+
+        let mut file = tempfile().unwrap();
+        write!(file, "testing decryption").unwrap();
+        file.flush().unwrap();
+
+        let key_result: Vec<ListKeyResult> = list_keys(gpg.clone(), true, false);
+        let output: String = PathBuf::from(get_output_dir(name)).join("test_encrypt.txt").to_string_lossy().to_string();
+        let option = gen_encrypt_key_and_symmetric_option(file, vec![key_result[0].keyid.clone()],None, "1234".to_string(), Some(output.clone()));
+
+        let result: Result<CmdResult, GPGError> = gpg.encrypt(option);
+        assert_eq!(result.unwrap().is_success(), true);
+        assert_eq!(Path::new(&output).exists(), true);
+
+        let decrypt_output: String = PathBuf::from(get_output_dir(name)).join("test_decrypt.txt").to_string_lossy().to_string();
+        // decrypt with key
+        let option = gen_decrypt_default_option(output.clone(), key_result[0].keyid.clone(), Some(get_key_passphrass()), Some(decrypt_output.clone()));
+        let result = gpg.decrypt(option);
+        assert_eq!(result.unwrap().is_success(), true);
+        assert_eq!(Path::new(&decrypt_output).exists(), true);
+
+        let mut decrypt_file: File = File::open(&decrypt_output).unwrap();
+        let mut buffer: Vec<u8> = Vec::new();
+        decrypt_file.read_to_end(&mut buffer).unwrap();
+        assert_eq!(String::from_utf8_lossy(&buffer), "testing decryption");
+
+        // decrypt with passphrase
+        let option = gen_decrypt_passphrase_option(output, "1234".to_string(), Some(decrypt_output.clone()));
+        let result = gpg.decrypt(option);
+        assert_eq!(result.unwrap().is_success(), true);
+        assert_eq!(Path::new(&decrypt_output).exists(), true);
+
+        let mut decrypt_file: File = File::open(&decrypt_output).unwrap();
+        let mut buffer: Vec<u8> = Vec::new();
+        decrypt_file.read_to_end(&mut buffer).unwrap();
+        assert_eq!(String::from_utf8_lossy(&buffer), "testing decryption");
+
+        cleanup_after_tests(name);
+    }
+
+    #[test]
+    fn test_decrypt_file_with_passphrase_or_key_fail(){
+        // test decrypting file with passphrase
+
+        let name:String  = generate_random_string();
+        let name: &str = name.as_str();
+
+        let gpg: GPG = get_gpg_init(name);
+        gen_protected_key(gpg.clone());
+
+        let mut file = tempfile().unwrap();
+        write!(file, "testing decryption").unwrap();
+        file.flush().unwrap();
+
+        let key_result: Vec<ListKeyResult> = list_keys(gpg.clone(), true, false);
+        let output: String = PathBuf::from(get_output_dir(name)).join("test_encrypt.txt").to_string_lossy().to_string();
+        let option = gen_encrypt_key_and_symmetric_option(file, vec![key_result[0].keyid.clone()],None, "1234".to_string(), Some(output.clone()));
+
+        let result: Result<CmdResult, GPGError> = gpg.encrypt(option);
+        assert_eq!(result.unwrap().is_success(), true);
+        assert_eq!(Path::new(&output).exists(), true);
+
+        let decrypt_output: String = PathBuf::from(get_output_dir(name)).join("test_decrypt.txt").to_string_lossy().to_string();
+        // decrypt with key, but didn't provide key passphrase
+        let option = gen_decrypt_default_option(output.clone(), key_result[0].keyid.clone(), None, Some(decrypt_output.clone()));
+        let result = gpg.decrypt(option);
+        assert!(matches!(result.unwrap_err().error_type, GPGErrorType::GPGProcessError(_)));
+        assert_eq!(Path::new(&decrypt_output).exists(), false);
+
+        // decrypt with passphrase, but wrong passphrase
+        let option = gen_decrypt_passphrase_option(output, "123".to_string(), Some(decrypt_output.clone()));
+        let result = gpg.decrypt(option);
+        assert!(matches!(result.unwrap_err().error_type, GPGErrorType::GPGProcessError(_)));
+        assert_eq!(Path::new(&decrypt_output).exists(), false);
+
+        cleanup_after_tests(name);
+    }
 }
