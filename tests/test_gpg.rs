@@ -1244,4 +1244,124 @@ mod tests {
 
         cleanup_after_tests(name);
     }
+
+    #[test]
+    fn test_verify_file(){
+        // test verify file with embedded signature
+
+        let name:String  = generate_random_string();
+        let name: &str = name.as_str();
+
+        let gpg: GPG = get_gpg_init(name);
+        gen_protected_key(gpg.clone());
+
+        let mut file = tempfile().unwrap();
+        write!(file, "testing signing").unwrap();
+        file.flush().unwrap();
+
+        let key_result: Vec<ListKeyResult> = list_keys(gpg.clone(), true, false);
+        let output: String = PathBuf::from(get_output_dir(name)).join("test_sign.txt").to_string_lossy().to_string();
+        let option: SignOption = gen_sign_default_option(file, key_result[0].keyid.clone(), Some(get_key_passphrass()), Some(output.clone()));
+
+        let result: Result<CmdResult, GPGError> = gpg.sign(option);
+        assert_eq!(result.unwrap().is_success(), true);
+        assert_eq!(Path::new(&output).exists(), true);
+
+        let result: Result<CmdResult, GPGError> = gpg.verify_file(None, Some(output.clone()), None, None);
+        assert_eq!(result.unwrap().is_success(), true);
+
+        cleanup_after_tests(name);
+    }
+
+    #[test]
+    fn test_verify_file_detached_signature(){
+        // test verify file with detached signature
+
+        let name:String  = generate_random_string();
+        let name: &str = name.as_str();
+
+        let gpg: GPG = get_gpg_init(name);
+        gen_protected_key(gpg.clone());
+
+        let mut file = tempfile().unwrap();
+        write!(file, "testing signing").unwrap();
+        file.flush().unwrap();
+
+        let key_result: Vec<ListKeyResult> = list_keys(gpg.clone(), true, false);
+        let output: String = PathBuf::from(get_output_dir(name)).join("signature.sig").to_string_lossy().to_string();
+        let option: SignOption = gen_sign_detached_option(file.try_clone().unwrap(), key_result[0].keyid.clone(), Some(get_key_passphrass()), Some(output.clone()));
+
+        let result: Result<CmdResult, GPGError> = gpg.sign(option);
+        assert_eq!(result.unwrap().is_success(), true);
+        assert_eq!(Path::new(&output).exists(), true);
+
+        let result: Result<CmdResult, GPGError> = gpg.verify_file(Some(file), None, Some(output.clone()), None);
+        assert_eq!(result.unwrap().is_success(), true);
+
+        cleanup_after_tests(name);
+    }
+
+    #[test]
+    fn test_verify_file_fail(){
+        // test verify file fail (provide a file without signature)
+
+        let name:String  = generate_random_string();
+        let name: &str = name.as_str();
+
+        let gpg: GPG = get_gpg_init(name);
+        gen_protected_key(gpg.clone());
+
+        let mut file = tempfile().unwrap();
+        write!(file, "testing signing").unwrap();
+        file.flush().unwrap();
+
+        let key_result: Vec<ListKeyResult> = list_keys(gpg.clone(), true, false);
+        let output: String = PathBuf::from(get_output_dir(name)).join("test_sign.txt").to_string_lossy().to_string();
+        let option: SignOption = gen_sign_default_option(file, key_result[0].keyid.clone(), Some(get_key_passphrass()), Some(output.clone()));
+
+        let result: Result<CmdResult, GPGError> = gpg.sign(option);
+        assert_eq!(result.unwrap().is_success(), true);
+        assert_eq!(Path::new(&output).exists(), true);
+
+        let mut file = tempfile().unwrap();
+        write!(file, "testing verifying").unwrap();
+        file.flush().unwrap();
+
+        let result: Result<CmdResult, GPGError> = gpg.verify_file(Some(file), None, None, None);
+        assert!(matches!(result.unwrap_err().error_type, GPGErrorType::GPGProcessError(_)));
+
+        cleanup_after_tests(name);
+    }
+
+    #[test]
+    fn test_verify_file_detached_signature_fail(){
+        // test verify file with detached signature fail (provide a file that wasn't realted to the detached signature)
+
+        let name:String  = generate_random_string();
+        let name: &str = name.as_str();
+
+        let gpg: GPG = get_gpg_init(name);
+        gen_protected_key(gpg.clone());
+
+        let mut file = tempfile().unwrap();
+        write!(file, "testing signing").unwrap();
+        file.flush().unwrap();
+
+        let key_result: Vec<ListKeyResult> = list_keys(gpg.clone(), true, false);
+        let output: String = PathBuf::from(get_output_dir(name)).join("signature.sig").to_string_lossy().to_string();
+        let option: SignOption = gen_sign_detached_option(file, key_result[0].keyid.clone(), Some(get_key_passphrass()), Some(output.clone()));
+
+        let result: Result<CmdResult, GPGError> = gpg.sign(option);
+        assert_eq!(result.unwrap().is_success(), true);
+        assert_eq!(Path::new(&output).exists(), true);
+
+        let mut file = tempfile().unwrap();
+        write!(file, "testing verifying").unwrap();
+        file.flush().unwrap();
+
+        let result: Result<CmdResult, GPGError> = gpg.verify_file(Some(file), None, Some(output.clone()), None);
+        assert!(matches!(result.unwrap_err().error_type, GPGErrorType::GPGProcessError(_)));
+
+        cleanup_after_tests(name);
+    }
 }
