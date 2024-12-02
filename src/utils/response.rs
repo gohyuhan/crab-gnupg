@@ -8,7 +8,7 @@ use super::enums::Operation;
 
 //*******************************************************
 
-/// a result handler for command process output/error result
+// a result handler for command process output/error result
 #[derive(Debug, Clone)]
 pub struct CmdResult {
     pub raw_data: Option<String>,
@@ -237,7 +237,7 @@ impl Subkey {
     }
 }
 
-///  a result handler for handling the result of keys action ( mainly of retrieve key list related action )
+//  a result handler for handling the result of keys action ( mainly of retrieve key list related action )
 pub struct ListKey {
     // in_subkey: include subkeys
     // key list: a list of key

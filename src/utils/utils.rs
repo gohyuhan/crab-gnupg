@@ -12,7 +12,7 @@ use super::response::{CmdResult, ListKeyResult};
 const VERSION_REGEX: &str = r"^cfg:version:(\d+(\.\d+)*)";
 const LIST_KEY_KEYWORDS: [&str; 8] = ["pub", "uid", "sec", "fpr", "sub", "ssb", "sig", "grp"];
 
-/// check if a path is a directory
+// check if a path is a directory
 pub fn check_is_dir(path: String) -> bool {
     let path = Path::new(&path);
 
@@ -22,14 +22,14 @@ pub fn check_is_dir(path: String) -> bool {
     return true;
 }
 
-/// retrieve home directory of the system
+// retrieve home directory of the system
 fn get_user_directory() -> PathBuf {
     let home_dir = std::env::var("HOME").unwrap();
 
     return PathBuf::from(home_dir);
 }
 
-///  retrieve or generate the directory for gpg key
+//  retrieve or generate the directory for gpg key
 pub fn get_or_create_gpg_homedir(path:String) -> String {
     let home_dir = get_user_directory();
     let gpg_dir = if !path.is_empty() { path } else { home_dir.join(".gnupg").to_string_lossy().to_string() };
@@ -56,7 +56,7 @@ pub fn get_or_create_gpg_homedir(path:String) -> String {
     return gpg_dir;
 }
 
-///  retrieve or generate the directory for gpg output
+//  retrieve or generate the directory for gpg output
 pub fn get_or_create_gpg_output_dir(path:String) -> String {
     let home_dir = get_user_directory();
     let gpg_output_dir = if !path.is_empty() { path } else { home_dir.join("gnupg/output").to_string_lossy().to_string() };
@@ -68,7 +68,7 @@ pub fn get_or_create_gpg_output_dir(path:String) -> String {
     return gpg_output_dir;
 }
 
-/// retrieve gpg version from result raw data
+// retrieve gpg version from result raw data
 pub fn get_gpg_version(result: &CmdResult) -> (f32, String) {
     let data: Option<String> = result.get_raw_data();
     let re = Regex::new(VERSION_REGEX).unwrap();

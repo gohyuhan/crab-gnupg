@@ -21,7 +21,7 @@ const BUFFER_SIZE: usize = 8192;
 //             RELATED TO COMMAND PROCESS
 
 //*******************************************************
-/// a centralized function to spawn Command and handle its IO
+// a centralized function to spawn Command and handle its IO
 pub fn handle_cmd_io(
     cmd_args: Option<Vec<String>>,
     passphrase: Option<String>,
@@ -88,7 +88,7 @@ pub fn handle_cmd_io(
     ));
 }
 
-/// generate a list of arguments to be passed to gpg process
+// generate a list of arguments to be passed to gpg process
 fn generate_cmd_args(
     cmd_args: Option<Vec<String>>,
     passphrase: Option<String>,
@@ -131,7 +131,7 @@ fn generate_cmd_args(
     return args;
 }
 
-/// start a process and return the child process
+// start a process and return the child process
 pub fn start_process(
     cmd_args: Option<Vec<String>>,
     passphrase: Option<String>,
@@ -160,7 +160,7 @@ pub fn start_process(
     return cmd;
 }
 
-/// to collect output / output from the Command process
+// to collect output / output from the Command process
 pub fn collect_cmd_output_response(
     mut cmd_process: Child,
     result: Arc<Mutex<&mut CmdResult>>,
@@ -190,7 +190,7 @@ pub fn collect_cmd_output_response(
     result.lock().unwrap().set_return_code(exit_code);
 }
 
-/// read output from stdout
+// read output from stdout
 fn read_cmd_output(mut stdout: ChildStdout, result: Arc<Mutex<&mut CmdResult>>) {
     let mut output_lines: Vec<String> = Vec::new();
     loop {
@@ -213,7 +213,7 @@ fn read_cmd_output(mut stdout: ChildStdout, result: Arc<Mutex<&mut CmdResult>>) 
     drop(stdout);
 }
 
-/// read response from stderr
+// read response from stderr
 fn read_cmd_response(mut stderr: ChildStderr, result: Arc<Mutex<&mut CmdResult>>) {
     let mut response_lines: Vec<String> = Vec::new();
     loop {
@@ -254,7 +254,7 @@ fn read_cmd_response(mut stderr: ChildStderr, result: Arc<Mutex<&mut CmdResult>>
     drop(stderr);
 }
 
-/// start writing process
+// start writing process
 fn start_writing_process(
     file: Option<File>,
     byte_input: Option<Vec<u8>>,

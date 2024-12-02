@@ -19,7 +19,7 @@ use crate::utils::{
     },
 };
 
-/// a struct to represent a GPG object
+// a struct to represent a GPG object
 //*******************************************************
 
 //                 RELATED TO GPG
@@ -27,28 +27,28 @@ use crate::utils::{
 //*******************************************************
 #[derive(Debug, Clone)]
 pub struct GPG {
-    /// a path to a directory where the local key were at
+    // a path to a directory where the local key were at
     pub homedir: String,
-    /// a path to a directory where the output files from gpg will save to
+    // a path to a directory where the output files from gpg will save to
     pub output_dir: String,
-    /// a haspmap ( or dict (in python) ) of env variables that would be passed to process
+    // a haspmap ( or dict (in python) ) of env variables that would be passed to process
     pub env: Option<HashMap<String, String>>,
-    /// a list of name of keyring files to use. If provided, the default keyring will be ignored.
+    // a list of name of keyring files to use. If provided, the default keyring will be ignored.
     pub keyrings: Option<Vec<String>>,
-    /// a list of name of secret keyring files to use.
+    // a list of name of secret keyring files to use.
     pub secret_keyring: Option<Vec<String>>,
-    /// additional arguments to be passed to gpg
+    // additional arguments to be passed to gpg
     pub options: Option<Vec<String>>,
-    /// a boolean to indicate if the output should be armored
+    // a boolean to indicate if the output should be armored
     pub armor: bool,
-    /// the major minor version of gpg, should only be set by system, user should not set this ex) 2.4
+    // the major minor version of gpg, should only be set by system, user should not set this ex) 2.4
     pub version: f32,
-    /// the full version of gpg, should only be set by system, user should not set this ex) 2.4.6
+    // the full version of gpg, should only be set by system, user should not set this ex) 2.4.6
     pub full_version: String,
 }
 
 impl GPG {
-    /// initialize a GPG object with a homedir and an output_dir or none (system set homedir and output dir)
+    // initialize a GPG object with a homedir and an output_dir or none (system set homedir and output dir)
     pub fn init(
         homedir: Option<String>,
         output_dir: Option<String>,
@@ -603,7 +603,7 @@ impl GPG {
     //                 FILE ENCRYPTION
 
     //*******************************************************
-    /// to encrypt file, use the EncryptionOption struct to create the encryption options
+    // to encrypt file, use the EncryptionOption struct to create the encryption options
     pub fn encrypt(&self, encrypt_option: EncryptOption) -> Result<CmdResult, GPGError> {
         // encryption_option: struct that contains all the encryption options ( refer to the struct for more info )
 
@@ -786,7 +786,7 @@ impl GPG {
     //                   FILE DECRYPTION
 
     //*******************************************************
-    /// to encrypt file, use the DecryptionOption struct to create the decryption options
+    // to encrypt file, use the DecryptionOption struct to create the decryption options
     pub fn decrypt(&self, decrypt_option: DecryptOption) -> Result<CmdResult, GPGError> {
         // decrypt_option: struct that contains all the decryption options ( refer to the struct for more info )
 
@@ -1017,7 +1017,7 @@ impl GPG {
             None,
             true,
             true,
-            Operation::Verify,
+            Operation::VerifyFile,
         );
         match result {
             Ok(result) => {
@@ -1045,9 +1045,9 @@ impl GPG {
     }
 }
 
-/// a struct to represent GPG Encryption Option
-/// use this to construct the options for GPG Encryption
-/// that will be pass to the encryption method
+// a struct to represent GPG Encryption Option
+// use this to construct the options for GPG Encryption
+// that will be pass to the encryption method
 //*******************************************************
 
 //         RELATED TO GPG ENCRYPTION OPTION
@@ -1153,9 +1153,9 @@ impl EncryptOption {
     }
 }
 
-/// a struct to represent GPG Decryption Option
-/// use this to construct the options for GPG Decryption
-/// that will be pass to the decryption method
+// a struct to represent GPG Decryption Option
+// use this to construct the options for GPG Decryption
+// that will be pass to the decryption method
 //*******************************************************
 
 //         RELATED TO GPG DECRYPTION OPTION
@@ -1224,9 +1224,9 @@ impl DecryptOption {
     }
 }
 
-/// a struct to represent GPG Signing Option
-/// use this to construct the options for GPG Signing
-/// that will be pass to the signing method
+// a struct to represent GPG Signing Option
+// use this to construct the options for GPG Signing
+// that will be pass to the signing method
 //*******************************************************
 
 //         RELATED TO GPG SIGNING OPTION
