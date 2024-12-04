@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use super::enums::Operation;
+use super::enums::{DeleteProblem, Operation};
 
 //*******************************************************
 
@@ -72,6 +72,28 @@ impl CmdResult {
             problem.insert("status".to_string(), self.status.as_ref().unwrap().clone());
             problem.insert("key_id".to_string(), values[0].to_string());
             problem.insert("username".to_string(), values[1].to_string());
+            if self.problem.is_none() {
+                self.problem = Some(vec![problem]);
+            } else {
+                self.problem.as_mut().unwrap().push(problem);
+            }
+        } else if keyword == "NODATA" {
+            if self.raw_data.as_ref().unwrap().contains("no valid OpenPGP data found") {
+                self.success = false;
+            }
+        } else if keyword == "DELETE_PROBLEM" {
+            let mut problem: HashMap<String, String> = HashMap::new();
+            problem.insert("delete_problem".to_string(), DeleteProblem::from_int(value.parse::<u8>().unwrap()));
+            if self.problem.is_none() {
+                self.problem = Some(vec![problem]);
+            } else {
+                self.problem.as_mut().unwrap().push(problem);
+            }
+            self.success = false;
+        } else if keyword == "UNKNOWN_KEYWORD" {
+            self.success = false;
+            let mut problem: HashMap<String, String> = HashMap::new();
+            problem.insert("unknown_keyword".to_string(), value);
             if self.problem.is_none() {
                 self.problem = Some(vec![problem]);
             } else {
@@ -154,41 +176,122 @@ pub struct ListKeyResult {
 
 impl ListKeyResult {
     fn new(args: Vec<&str>) -> Self {
-        return ListKeyResult {
-            r#type: String::from(args[0]),
-            validity: String::from(args[1]),
-            length: String::from(args[2]),
-            algo: String::from(args[3]),
-            keyid: String::from(args[4]),
-            date: String::from(args[5]),
-            expires: String::from(args[6]),
-            dummy: String::from(args[7]),
-            ownertrust: String::from(args[8]),
-            uid: String::from(args[9]),
-            sig: String::from(args[10]),
-            cap: String::from(args[11]),
-            issuer: String::from(args[12]),
-            flag: String::from(args[13]),
-            token: String::from(args[14]),
-            hash: String::from(args[15]),
-            curve: String::from(args[16]),
-            compliance: String::from(args[17]),
-            updated: String::from(args[18]),
-            origin: String::from(args[19]),
-            comment: String::from(args[20]),
-            keygrip: String::from(args[20]),
+        let mut result: ListKeyResult = ListKeyResult {
+            r#type: String::from("Unavailable"),
+            validity: String::from("Unavailable"),
+            length: String::from("Unavailable"),
+            algo: String::from("Unavailable"),
+            keyid: String::from("Unavailable"),
+            date: String::from("Unavailable"),
+            expires: String::from("Unavailable"),
+            dummy: String::from("Unavailable"),
+            ownertrust: String::from("Unavailable"),
+            uid: String::from("Unavailable"),
+            sig: String::from("Unavailable"),
+            cap: String::from("Unavailable"),
+            issuer: String::from("Unavailable"),
+            flag: String::from("Unavailable"),
+            token: String::from("Unavailable"),
+            hash: String::from("Unavailable"),
+            curve: String::from("Unavailable"),
+            compliance: String::from("Unavailable"),
+            updated: String::from("Unavailable"),
+            origin: String::from("Unavailable"),
+            comment: String::from("Unavailable"),
+            keygrip: String::from("Unavailable"),
             uids: vec![],
             sigs: vec![],
             subkeys: vec![],
             fingerprint: String::from(""),
         };
+        let mut idx: usize = 0;
+        if idx < args.len() {
+            result.r#type = String::from(args[idx]);
+            idx += 1;
+        }
+        if idx < args.len() {
+            result.validity = String::from(args[idx]);
+            idx += 1;
+        }
+        if idx < args.len() {
+            result.length = String::from(args[idx]);
+            idx += 1;
+        }
+        if idx < args.len() {
+            result.algo = String::from(args[idx]);
+            idx += 1;
+        }
+        if idx < args.len() {
+            result.keyid = String::from(args[idx]);
+            idx += 1;
+        }
+        if idx < args.len() {
+            result.date = String::from(args[idx]);
+            idx += 1;
+        }
+        if idx < args.len() {
+            result.expires = String::from(args[idx]);
+            idx += 1;
+        }
+        if idx < args.len() {
+            result.dummy = String::from(args[idx]);
+            idx += 1;
+        }
+        if idx < args.len() {
+            result.ownertrust = String::from(args[idx]);
+            idx += 1;
+        }
+        if idx < args.len() {
+            result.uid = String::from(args[idx]);
+            idx += 1;
+        }
+        if idx < args.len() {
+            result.sig = String::from(args[idx]);
+            idx += 1;
+        }
+        if idx < args.len() {
+            result.cap = String::from(args[idx]);
+            idx += 1;
+        }
+        if idx < args.len() {
+            result.issuer = String::from(args[idx]);
+            idx += 1;
+        }
+        if idx < args.len() {
+            result.flag = String::from(args[idx]);
+            idx += 1;
+        }
+        if idx < args.len() {
+            result.token = String::from(args[idx]);
+            idx += 1;
+        }
+        if idx < args.len() {
+            result.hash = String::from(args[idx]);
+            idx += 1;
+        }
+        if idx < args.len() {
+            result.curve = String::from(args[idx]);
+            idx += 1;
+        }
+        if idx < args.len() {
+            result.compliance = String::from(args[idx]);
+            idx += 1;
+        }
+        if idx < args.len() {
+            result.updated = String::from(args[idx]);
+            idx += 1;
+        }
+        if idx < args.len() {
+            result.comment = String::from(args[idx]);
+        }
+        return result;
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct Subkey {
     pub r#type: String,
-    pub trust: String,
+    pub validity: String,
     pub length: String,
     pub algo: String,
     pub keyid: String,
@@ -211,29 +314,106 @@ pub struct Subkey {
 }
 impl Subkey {
     fn new(args: Vec<&str>) -> Self {
-        return Subkey {
-            r#type: String::from(args[0]),
-            trust: String::from(args[1]),
-            length: String::from(args[2]),
-            algo: String::from(args[3]),
-            keyid: String::from(args[4]),
-            date: String::from(args[5]),
-            expires: String::from(args[6]),
-            dummy: String::from(args[7]),
-            ownertrust: String::from(args[8]),
-            uid: String::from(args[9]),
-            sig: String::from(args[10]),
-            cap: String::from(args[11]),
-            issuer: String::from(args[12]),
-            flag: String::from(args[13]),
-            token: String::from(args[14]),
-            hash: String::from(args[15]),
-            curve: String::from(args[16]),
-            compliance: String::from(args[17]),
-            updated: String::from(args[18]),
+        let mut result: Subkey = Subkey {
+            r#type: String::from("Unavailable"),
+            validity: String::from("Unavailable"),
+            length: String::from("Unavailable"),
+            algo: String::from("Unavailable"),
+            keyid: String::from("Unavailable"),
+            date: String::from("Unavailable"),
+            expires: String::from("Unavailable"),
+            dummy: String::from("Unavailable"),
+            ownertrust: String::from("Unavailable"),
+            uid: String::from("Unavailable"),
+            sig: String::from("Unavailable"),
+            cap: String::from("Unavailable"),
+            issuer: String::from("Unavailable"),
+            flag: String::from("Unavailable"),
+            token: String::from("Unavailable"),
+            hash: String::from("Unavailable"),
+            curve: String::from("Unavailable"),
+            compliance: String::from("Unavailable"),
+            updated: String::from("Unavailable"),
             keygrip: String::from(""),
             fingerprint: String::from(""),
         };
+        let mut idx: usize = 0;
+        if idx < args.len() {
+            result.r#type = String::from(args[idx]);
+            idx += 1;
+        }
+        if idx < args.len() {
+            result.validity = String::from(args[idx]);
+            idx += 1;
+        }
+        if idx < args.len() {
+            result.length = String::from(args[idx]);
+            idx += 1;
+        }
+        if idx < args.len() {
+            result.algo = String::from(args[idx]);
+            idx += 1;
+        }
+        if idx < args.len() {
+            result.keyid = String::from(args[idx]);
+            idx += 1;
+        }
+        if idx < args.len() {
+            result.date = String::from(args[idx]);
+            idx += 1;
+        }
+        if idx < args.len() {
+            result.expires = String::from(args[idx]);
+            idx += 1;
+        }
+        if idx < args.len() {
+            result.dummy = String::from(args[idx]);
+            idx += 1;
+        }
+        if idx < args.len() {
+            result.ownertrust = String::from(args[idx]);
+            idx += 1;
+        }
+        if idx < args.len() {
+            result.uid = String::from(args[idx]);
+            idx += 1;
+        }
+        if idx < args.len() {
+            result.sig = String::from(args[idx]);
+            idx += 1;
+        }
+        if idx < args.len() {
+            result.cap = String::from(args[idx]);
+            idx += 1;
+        }
+        if idx < args.len() {
+            result.issuer = String::from(args[idx]);
+            idx += 1;
+        }
+        if idx < args.len() {
+            result.flag = String::from(args[idx]);
+            idx += 1;
+        }
+        if idx < args.len() {
+            result.token = String::from(args[idx]);
+            idx += 1;
+        }
+        if idx < args.len() {
+            result.hash = String::from(args[idx]);
+            idx += 1;
+        }
+        if idx < args.len() {
+            result.curve = String::from(args[idx]);
+            idx += 1;
+        }
+        if idx < args.len() {
+            result.compliance = String::from(args[idx]);
+            idx += 1;
+        }
+        if idx < args.len() {
+            result.updated = String::from(args[idx]);
+        }
+        return result
     }
 }
 

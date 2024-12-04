@@ -699,8 +699,10 @@ impl GPG {
         if symmetric {
             args.append(&mut vec![
                 "--symmetric".to_string(),
-                "--no-symkey-cache".to_string(),
             ]);
+            if self.version>=2.1{
+                args.push("--no-symkey-cache".to_string());
+            }
             if passphrase.is_none() {
                 return Err(GPGError::new(
                     GPGErrorType::PassphraseError(

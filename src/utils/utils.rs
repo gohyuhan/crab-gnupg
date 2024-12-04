@@ -1,5 +1,5 @@
 use std::{
-    fs::{metadata, set_permissions, File}, io::{Seek}, os::unix::fs::PermissionsExt, path::{Path, PathBuf}
+    fs::{metadata, set_permissions, File}, io::Seek, os::unix::fs::PermissionsExt, path::{Path, PathBuf}
 };
 
 use regex::Regex;

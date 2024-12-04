@@ -247,6 +247,9 @@ fn read_cmd_response(mut stderr: ChildStderr, result: Arc<Mutex<&mut CmdResult>>
                 result.lock().unwrap().handle_status(keyword, value);
             } else if &response_line_string[0..5] == "gpg: " {
                 let debug = &response_line_string[5..];
+                if debug.contains("unknown keyword") {
+                    result.lock().unwrap().handle_status("UNKNOWN_KEYWORD", "unknown keyword".to_string());
+                }
                 result.lock().unwrap().capture_debug_log(debug.to_string());
             }
         }
