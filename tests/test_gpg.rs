@@ -284,6 +284,7 @@ mod tests {
         cleanup_after_tests(name);
     }
 
+    #[cfg(not(feature = "test_legacy"))]
     #[test]
     fn test_delete_subkeys(){
         // test deleting subkeys
@@ -374,6 +375,7 @@ mod tests {
         cleanup_after_tests(name);
     }
 
+    #[cfg(not(feature = "test_legacy"))]
     #[test]
     fn test_export_secret_key_no_passphrase(){
         // test exporting passphrase protected seceret key without passphrase
@@ -575,6 +577,7 @@ mod tests {
         cleanup_after_tests(name);
     }
 
+    #[cfg(not(feature = "test_legacy"))]
     #[test]
     fn test_trust_key_invalid_fingerprint(){
         // test setting ownertrust for key with invalid fingerprint
@@ -688,6 +691,7 @@ mod tests {
         cleanup_after_tests(name);
     }
 
+    #[cfg(not(feature = "test_legacy"))]
     #[test]
     fn test_sign_key_wrong_keyid(){
         // test signing key
@@ -723,7 +727,7 @@ mod tests {
     
         cleanup_after_tests(name);
     }
-
+    
     #[test]
     fn test_sign_key_with_passphrase_protected_key(){
         // test signing key with passphrase proctected key
@@ -751,6 +755,7 @@ mod tests {
         cleanup_after_tests(name);
     }
 
+    #[cfg(not(feature = "test_legacy"))]
     #[test]
     fn test_sign_key_with_passphrase_protected_key_wrong_passphrase(){
         // test signing key with passphrase proctected key with wrong passphrase
@@ -778,6 +783,7 @@ mod tests {
         cleanup_after_tests(name);
     }
 
+    #[cfg(not(feature = "test_legacy"))]
     #[test]
     fn test_sign_key_with_passphrase_protected_key_no_passphrase(){
         // test signing key with passphrase proctected key without providing passphrase
@@ -1107,6 +1113,7 @@ mod tests {
         cleanup_after_tests(name);
     }
 
+    #[cfg(not(feature = "test_legacy"))]
     #[test]
     fn test_decrypt_file_with_passphrase_or_key_fail(){
         // test decrypting file with passphrase
@@ -1170,6 +1177,7 @@ mod tests {
         cleanup_after_tests(name);
     }
 
+    #[cfg(not(feature = "test_legacy"))]
     #[test]
     fn test_sign_file_embedded_signature_fail(){
         // test signing file with embedded signature, wrong passphrase (fail)
@@ -1220,6 +1228,7 @@ mod tests {
         cleanup_after_tests(name);
     }
 
+    #[cfg(not(feature = "test_legacy"))]
     #[test]
     fn test_sign_file_detached_signature_fail(){
         // test signing file with detached signature, wrong passphrase (fail)

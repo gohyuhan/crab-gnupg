@@ -100,7 +100,6 @@ fn generate_cmd_args(
     // passphrase: whether the next operation need a passphrase to be passed
     // version: version of gpg
     // homedir: the homedir of gpg
-    // use_agent: whether to use gpg-agent
     // options: additional options to be passed to gpg, obtained in GPG object
 
     let mut args: Vec<String> = vec![
@@ -160,7 +159,7 @@ pub fn start_process(
     return cmd;
 }
 
-// to collect output / output from the Command process
+// to collect output / response from the Command process
 pub fn collect_cmd_output_response(
     mut cmd_process: Child,
     result: Arc<Mutex<&mut CmdResult>>,

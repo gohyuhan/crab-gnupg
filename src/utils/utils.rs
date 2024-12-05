@@ -1,5 +1,5 @@
 use std::{
-    fs::{metadata, set_permissions, File}, io::Seek, os::unix::fs::PermissionsExt, path::{Path, PathBuf}
+    fs::{metadata, set_permissions, File}, io::{Seek, Write}, os::unix::fs::PermissionsExt, path::{Path, PathBuf}, process::Command
 };
 
 use regex::Regex;
@@ -51,6 +51,19 @@ pub fn get_or_create_gpg_homedir(path:String) -> String {
             let _ = set_permissions(gpg_dir_path, permissions);
         }
         Err(_) => {}
+    }
+
+    let conf_path = gpg_dir_path.join("gpg-agent.conf");
+    if !Path::new(&conf_path).exists() {
+        let mut file = File::create(conf_path).unwrap();
+
+        // Write the configuration to disable passphrase caching
+        let _ = file.write_all(b"default-cache-ttl 0\n");
+        let _ = file.write_all(b"max-cache-ttl 0\n");
+
+        let _ = Command::new("gpgconf")
+            .arg("--reload")
+            .arg("gpg-agent");
     }
 
     return gpg_dir;
