@@ -6,7 +6,7 @@ authors = ["Goh Yu Han <gohyuhan123456@gmail.com>"]
 
 description = "API for GNU Privacy Guard (GnuPG) written in rust. Manage gpg keys and secure files using rust."
 license = "MIT"
-repository = "https://github.com/yourusername/your-repo"
+repository = "https://github.com/hangoh/crab-gnupg"
 
 [dependencies]
 chrono = "0.4.38"
