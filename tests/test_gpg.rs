@@ -36,15 +36,23 @@ mod tests {
     use super::*;
 
     fn get_homedir(name:&str) -> String {
-        let home_dir = std::env::var("HOME").unwrap();
+        let home_dir = if cfg!(unix) {
+            std::env::var("HOME").unwrap()
+        } else {
+            std::env::var("USERPROFILE").unwrap()
+        };
 
-        return PathBuf::from(home_dir).join(format!("gnupg_test_{}/test_home", name)).to_string_lossy().to_string();
+        return PathBuf::from(home_dir).join(format!("crab_gnupg_test/gnupg_test_{}/test_home", name)).to_string_lossy().to_string();
     }
     
     fn get_output_dir(name:&str) -> String {
-        let home_dir = std::env::var("HOME").unwrap();
+        let home_dir = if cfg!(unix) {
+            std::env::var("HOME").unwrap()
+        } else {
+            std::env::var("USERPROFILE").unwrap()
+        };
 
-        return PathBuf::from(home_dir).join(format!("gnupg_test_{}/test_output", name)).to_string_lossy().to_string();
+        return PathBuf::from(home_dir).join(format!("crab_gnupg_test/gnupg_test_{}/test_output", name)).to_string_lossy().to_string();
     }
 
     fn generate_random_string() -> String {
@@ -124,8 +132,12 @@ mod tests {
     }
 
     fn cleanup_after_tests(name:&str) {
-        let home_dir = std::env::var("HOME").unwrap();
-        let test_dir = PathBuf::from(home_dir).join(format!("gnupg_test_{}", name)).to_string_lossy().to_string();
+        let home_dir = if cfg!(unix) {
+            std::env::var("HOME").unwrap()
+        } else {
+            std::env::var("USERPROFILE").unwrap()
+        };
+        let test_dir = PathBuf::from(home_dir).join(format!("crab_gnupg_test/gnupg_test_{}", name)).to_string_lossy().to_string();
     
         // Perform cleanup here
         if let Err(e) = remove_dir_all(test_dir) {

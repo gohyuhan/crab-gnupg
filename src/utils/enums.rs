@@ -64,7 +64,6 @@ impl TrustLevel {
     }
 }
 
-#[repr(u8)]
 #[derive(Debug, Clone)]
 pub enum DeleteProblem{
     NoKey = 1,
@@ -74,12 +73,12 @@ pub enum DeleteProblem{
 }
 
 impl DeleteProblem {
-    pub fn from_int(value: u8) -> String {
+    pub fn from_str(value: &str) -> String {
         match value {
-            1 => String::from("No Such Key"),
-            2 => String::from("Must delete secret key first"),
-            3 => String::from("Ambiguous specification"),
-            4 => String::from("Key is stored on a smartcard."),
+            "1" => String::from("No Such Key"),
+            "2" => String::from("Must delete secret key first"),
+            "3" => String::from("Ambiguous specification"),
+            "4" => String::from("Key is stored on a smartcard."),
             _ => format!("Unknown error: {}", value),  
         }
     }
