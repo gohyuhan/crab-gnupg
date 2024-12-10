@@ -1,6 +1,13 @@
 use std::{
-    fs::{metadata, set_permissions, File}, io::{Seek, Write}, os::unix::fs::PermissionsExt, path::{Path, PathBuf}, process::Command
+    fs::{metadata, File}, io::{Seek, Write}, path::{Path, PathBuf}, process::Command
 };
+
+#[cfg(unix)]
+use std::{
+    fs::set_permissions,
+    os::unix::fs::PermissionsExt
+};
+
 
 use regex::Regex;
 
@@ -24,21 +31,33 @@ pub fn check_is_dir(path: String) -> bool {
 
 // retrieve home directory of the system
 fn get_user_directory() -> PathBuf {
-    let home_dir = std::env::var("HOME").unwrap();
+    let home_dir = if cfg!(unix) {
+        std::env::var("HOME").unwrap()
+    } else {
+        std::env::var("USERPROFILE").unwrap()
+    };
 
     return PathBuf::from(home_dir);
+}
+
+// retrieve home directory of the system
+fn get_download_directory() -> PathBuf {
+    let home_dir: PathBuf = get_user_directory();
+
+    return PathBuf::from(home_dir).join("Downloads");
 }
 
 //  retrieve or generate the directory for gpg key
 pub fn get_or_create_gpg_homedir(path:String) -> String {
     let home_dir = get_user_directory();
-    let gpg_dir = if !path.is_empty() { path } else { home_dir.join(".gnupg").to_string_lossy().to_string() };
+    let gpg_directory: &str = if cfg!(unix) { ".gnupg" } else { "gnupg" };
+    let gpg_dir = if !path.is_empty() { path } else { home_dir.join(gpg_directory).to_string_lossy().to_string() };
 
     if !check_is_dir(gpg_dir.clone()) {
         std::fs::create_dir_all(gpg_dir.clone()).unwrap();
     }
 
-    // set the permission of the directory to 700
+    // set the permission of the directory to 700 in unix systems
     // else gpg will warn use with the following warning:
     // [ gpg: WARNING: unsafe permissions on homedir '/Users/< NAME >/.gnupg' ]
     let gpg_dir_path: &Path = Path::new(&gpg_dir);
@@ -46,9 +65,12 @@ pub fn get_or_create_gpg_homedir(path:String) -> String {
 
     match metadata {
         Ok(metadata) => {
-            let mut permissions = metadata.permissions();
-            permissions.set_mode(0o700); // 700 in octal
-            let _ = set_permissions(gpg_dir_path, permissions);
+            #[cfg(unix)]
+            {
+                let mut permissions = metadata.permissions();
+                permissions.set_mode(0o700); // 700 in octal
+                let _ = set_permissions(gpg_dir_path, permissions);
+            }
         }
         Err(_) => {}
     }
@@ -65,14 +87,14 @@ pub fn get_or_create_gpg_homedir(path:String) -> String {
             .arg("--reload")
             .arg("gpg-agent");
     }
-
+    
     return gpg_dir;
 }
 
 //  retrieve or generate the directory for gpg output
 pub fn get_or_create_gpg_output_dir(path:String) -> String {
-    let home_dir = get_user_directory();
-    let gpg_output_dir = if !path.is_empty() { path } else { home_dir.join("gnupg/output").to_string_lossy().to_string() };
+    let download_dir = get_download_directory();
+    let gpg_output_dir = if !path.is_empty() { path } else { download_dir.join("gnupg_output").to_string_lossy().to_string() };
 
     if !check_is_dir(gpg_output_dir.clone()) {
         std::fs::create_dir_all(gpg_output_dir.clone()).unwrap();

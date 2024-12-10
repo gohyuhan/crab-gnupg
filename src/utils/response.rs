@@ -83,7 +83,7 @@ impl CmdResult {
             }
         } else if keyword == "DELETE_PROBLEM" {
             let mut problem: HashMap<String, String> = HashMap::new();
-            problem.insert("delete_problem".to_string(), DeleteProblem::from_int(value.parse::<u8>().unwrap()));
+            problem.insert("delete_problem".to_string(), DeleteProblem::from_str(value.as_str()));
             if self.problem.is_none() {
                 self.problem = Some(vec![problem]);
             } else {

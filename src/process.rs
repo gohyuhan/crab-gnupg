@@ -37,6 +37,7 @@ pub fn handle_cmd_io(
     ops: Operation,
 ) -> Result<CmdResult, GPGError> {
     let mut write_thread: Option<JoinHandle<()>> = None;
+    let passphrase: Option<String> = if passphrase.is_some() {passphrase.clone()} else {Some("".to_string())};
     let process: Result<Child, Error> = start_process(
         Some(cmd_args.unwrap()),
         passphrase.clone(),
