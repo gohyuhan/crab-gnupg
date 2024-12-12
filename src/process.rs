@@ -249,6 +249,12 @@ fn read_cmd_response(mut stderr: ChildStderr, result: Arc<Mutex<&mut CmdResult>>
                 let debug = &response_line_string[5..];
                 if debug.contains("unknown keyword") {
                     result.lock().unwrap().handle_status("UNKNOWN_KEYWORD", "unknown keyword".to_string());
+                } else if debug.contains("No passphrase given") {
+                    result.lock().unwrap().handle_status("NO_PASSPHRASE", "No passphrase given".to_string());
+                } else if debug.contains("invalid fingerprint") {
+                    result.lock().unwrap().handle_status("INVALID_FINGERPRINT", "invalid fingerprint".to_string());
+                } else if debug.contains("Bad passphrase") {
+                    result.lock().unwrap().handle_status("BAD_PASSPHRASE", "bad passphrase".to_string());
                 }
                 result.lock().unwrap().capture_debug_log(debug.to_string());
             }
