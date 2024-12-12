@@ -15,6 +15,7 @@ It was design to make it easier to interact with gnupg command line tool for pro
 1. [Description](#description)
 2. [Installation](#installation)
 3. [Usage](#usage)
+4. [Change Logs](#change-logs)
 
 ## Description
 This project ``crab-gnupg`` allows you to easily interact with the gnupg command line tool with rust. It provides a simple and easy-to-use interface for performing various gnupg operations, such as encrypting, decrypting, signing, and verifying file as well as generating and managing keys. This project was build and tested using gnupg version 2.4.x. More modification and changes will be done to support gnupg version 1.4.x. in the future.
@@ -39,3 +40,28 @@ for window:
 ```bash
 choco install gnupg
 ```
+
+To add ``crab-gnupg`` to be use in a rust program
+```bash
+cargo add crab-gnupg
+```
+
+## Usage
+To check out how to use ``crab-gnupg``, check the [docs](docs/usage.md) here
+
+## Change Logs
+### v0.1.1
+Initial crate Publish. This includes GnuPG key managment and file operation like:
+
+- generate key
+- list keys
+- delete keys
+- import keys
+- export public keys
+- export secret keys
+- trust key
+- sign key
+- encrypt file
+- decrypt file
+- sign file
+- verify file
