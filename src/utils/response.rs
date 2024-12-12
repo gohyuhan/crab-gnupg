@@ -100,13 +100,15 @@ impl CmdResult {
                 self.problem.as_mut().unwrap().push(problem);
             }
         } else if keyword == "NO_PASSPHRASE" {
-            self.success = false;
-            let mut problem: HashMap<String, String> = HashMap::new();
-            problem.insert("passphrase".to_string(), value);
-            if self.problem.is_none() {
-                self.problem = Some(vec![problem]);
-            } else {
-                self.problem.as_mut().unwrap().push(problem);
+            if !self.raw_data.as_ref().unwrap().contains("No passphrase given - skipped") {
+                self.success = false;
+                let mut problem: HashMap<String, String> = HashMap::new();
+                problem.insert("passphrase".to_string(), value);
+                if self.problem.is_none() {
+                    self.problem = Some(vec![problem]);
+                } else {
+                    self.problem.as_mut().unwrap().push(problem);
+                }
             }
         } else if keyword == "INVALID_FINGERPRINT" {
             self.success = false;
