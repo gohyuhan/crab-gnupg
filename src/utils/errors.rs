@@ -10,6 +10,7 @@ pub struct GPGError {
     pub cmd_result: Option<CmdResult>,
 }
 
+#[doc(hidden)]
 impl GPGError {
     pub fn new(error_type: GPGErrorType, cmd_result: Option<CmdResult>) -> GPGError {
         return GPGError {
@@ -36,6 +37,7 @@ pub enum GPGErrorType {
     FileNotProvidedError(String),
 }
 
+#[doc(hidden)]
 impl Display for GPGErrorType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {

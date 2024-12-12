@@ -21,6 +21,7 @@ pub struct CmdResult {
     pub success: bool,
 }
 
+#[doc(hidden)]
 impl CmdResult {
     pub fn init(ops: Operation) -> CmdResult {
         CmdResult {
@@ -203,6 +204,7 @@ pub struct ListKeyResult {
     pub fingerprint: String,
 }
 
+#[doc(hidden)]
 impl ListKeyResult {
     fn new(args: Vec<&str>) -> Self {
         let mut result: ListKeyResult = ListKeyResult {
@@ -341,6 +343,8 @@ pub struct Subkey {
     pub keygrip: String,
     pub fingerprint: String,
 }
+
+#[doc(hidden)]
 impl Subkey {
     fn new(args: Vec<&str>) -> Self {
         let mut result: Subkey = Subkey {
@@ -458,6 +462,7 @@ pub struct ListKey {
     fingerprints: Option<Vec<String>>,
 }
 
+#[doc(hidden)]
 impl ListKey {
     pub fn init() -> ListKey {
         ListKey {

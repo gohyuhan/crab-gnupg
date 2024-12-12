@@ -19,6 +19,7 @@ pub enum Operation {
     VerifyFile,
 }
 
+#[doc(hidden)]
 impl Display for Operation {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -51,6 +52,7 @@ pub enum TrustLevel {
     Ultimate,
 }
 
+#[doc(hidden)]
 impl TrustLevel {
     pub fn value(&self) -> u8 {
         match &self {
@@ -71,7 +73,7 @@ pub enum DeleteProblem{
     AmbiguousSpecification = 3,
     KeyOnSmartCard = 4
 }
-
+#[doc(hidden)]
 impl DeleteProblem {
     pub fn from_str(value: &str) -> String {
         match value {
