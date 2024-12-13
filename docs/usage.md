@@ -25,7 +25,7 @@
 
 &nbsp;
 ## Initialize gpg
-Before any operation of gpg, a gpg object need to initialize to get access to other gpg function.  
+Before any operation of gpg, a gpg object need to be initialized to get access to other gpg function.  
 `GPG::init()` takes in 3 parameter in the following sequence
 | parameter  | type             | description                                                                                |
 |------------|------------------|--------------------------------------------------------------------------------------------|
