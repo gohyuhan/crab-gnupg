@@ -283,8 +283,7 @@ impl GPG {
         // passphrase: passphrase for passphrase protected secret keys
 
         // NOTE: delete both public and secret key by default
-        // NOTE: If the fingerprint is for subkeys, but is_subkey was not set to true, it will remove the parent key also,
-        //       also deletion of 
+        // NOTE: If the fingerprint is for subkeys, but is_subkey was not set to true, it will remove the parent key also
 
         let mut mode:String = "secret-and-public-key".to_string();
         if is_secret {
@@ -445,8 +444,8 @@ impl GPG {
         //*****************************************************************************
         //  NOTE: If there are 2 or more secret key that are
         //        passphrase proctected ( but different passphrase )
-        //        are being exported, keys that are protected by the passphrase
-        //        and not passphrase protected will be exported.
+        //        are being exported, keys that are protected by the provided passphrase
+        //        and keys that aren't passphrase protected will be exported
         //        ( as gpg can only read 1 passphrase at a time from STDIN)
         //*****************************************************************************
 

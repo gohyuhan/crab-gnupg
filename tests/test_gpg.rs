@@ -1356,7 +1356,7 @@ mod tests {
 
     #[test]
     fn test_verify_file_detached_signature_fail(){
-        // test verify file with detached signature fail (provide a file that wasn't realted to the detached signature)
+        // test verify file with detached signature fail (provide a file that wasn't related to the detached signature)
 
         let name:String  = generate_random_string();
         let name: &str = name.as_str();

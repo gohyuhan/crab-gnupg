@@ -31,7 +31,7 @@ Before any operation of gpg, a gpg object need to be initialized to get access t
 |------------|------------------|--------------------------------------------------------------------------------------------|
 | homedir    | `Option<String>` | Path where gpg store key, if `None` default to `~/.gnupg` for unix or `~/gnupg` for window |
 | output_dir | `Option<String>` | Path where gpg will save output files to, if `None` default to `~/Downloads/gnupg_output`  |
-| armor      | `bool`           | if output should be ASCII armoured                                                         |
+| armor      | `bool`           | If output should be ASCII armoured                                                         |
 
 Example:
 ```rust
@@ -47,7 +47,7 @@ To generate gpg key, you can use the function of `gen_key()` provided by `GPG`.
 | parameter        | type                              | description                                                                                                   |
 |------------------|-----------------------------------|---------------------------------------------------------------------------------------------------------------|
 | key_passphrase   | `Option<String>`                  | Passphrase for passphrase protected key, if not provided, the key generated will not be passphrase protected  |
-| args             | `Option<HashMap<String, String>>` | additional args provided for key generation, check GnuPG official documentation for detail available arguments|
+| args             | `Option<HashMap<String, String>>` | Additional args provided for key generation, check GnuPG official documentation for detail available arguments|
 
 Example:
 ```rust
@@ -74,3 +74,85 @@ use crab_gnupg::gnupg::GPG;
 let gpg:Result<GPG, GPGError> = GPG::init(None, None, true)
 let result:Result<Vec<ListKeyResult>, GPGError> = gpg.list_keys()
 ```
+
+&nbsp;
+## Delete keys
+To delete gpg key, you can use the function of `delete_keys()` provided by `GPG`.  
+`delete_keys()` takes in 4 parameters in the following sequence
+| parameter    | type               | description                                       |
+|--------------|--------------------|---------------------------------------------------|
+| fingerprints | `Vec<String>`      | List of fingerprints of keys to delete            |
+| is_secret    | `bool`             | If `true`, delete secret keys only                |
+| is_subkey    | `bool`             | If `true`, delete subkeys instead                 |
+| passphrase   | `Option<String>`   | Passphrase for passphrase protected secret keys   |
+
+Example:
+```rust
+use crab_gnupg::gnupg::GPG;
+
+let gpg:Result<GPG, GPGError> = GPG::init(None, None, true)
+let result:Result<Vec<ListKeyResult>, GPGError> = gpg.delete_keys(vec!["< FINGERPRINT >"], false, false, None);
+```
+
+&nbsp;
+## Import keys
+To import gpg key, you can use the function of `import_key()` provided by `GPG`.  
+`import_key()` takes in 4 parameters in the following sequence
+| parameter  | type                  | description                                                                                            |
+|------------|-----------------------|--------------------------------------------------------------------------------------------------------|
+| file       | `Option<File>`        | File for importing keys ( will be priotize if provided )                                               |
+| file_path  | `Option<String>`      | File for importing keys, will be ignored if file is provided                                           |
+| merge_only | `bool`                | If `true`, does not insert new keys but does only the merging of new signatures, user-IDs, subkeys etc |
+| extra_args | `Option<Vec<String>>` | Additional args provided for importing keys                                                            |
+
+Example:
+```rust
+use crab_gnupg::gnupg::GPG;
+use std::fs::File;
+
+let gpg:Result<GPG, GPGError> = GPG::init(None, None, true)
+
+// using file
+let file:File = File::open("< FILE_PATH >".to_string()).unwrap();
+let result:Result<Vec<ListKeyResult>, GPGError> = gpg.import_key(Some(), None, false, None);
+
+// using file path
+let result:Result<Vec<ListKeyResult>, GPGError> = gpg.import_key(None, Some("< FILE_PATH >".to_string()), false, None);
+```
+
+&nbsp;
+## Export public keys
+To export public gpg key, you can use the function of `export_public_key()` provided by `GPG`.  
+`export_public_key()` takes in 2 parameters in the following sequence
+| parameter | type                  | description                                                                                                                                       |
+|-----------|-----------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|
+| key_id    | `Option<Vec<String>>` | List of keyid(s) to export, if `None`, all public keys will be exported                                                                           |
+| output    | `Option<String>`      | Path that the exported key file will be saved to, if `None` default to `~/Downloads/gnupg_output/exported_public_key/public_key_< TIMESTAMP >.asc`|
+
+Example:
+```rust
+use crab_gnupg::gnupg::GPG;
+
+let gpg:Result<GPG, GPGError> = GPG::init(None, None, true)
+let result:Result<Vec<ListKeyResult>, GPGError> = gpg.export_public_key(None, None);
+```
+
+&nbsp;
+## Export secret keys
+To export secret gpg key, you can use the function of `export_secret_key()` provided by `GPG`.  
+`export_secret_key()` takes in 3 parameters in the following sequence
+| parameter | type                  | description                                                                                                                                       |
+|-----------|-----------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|
+| key_id    | `Option<Vec<String>>` | List of keyid(s) to export, if `None`, all secret keys will be exported                                                                           |
+| passphrase| `Option<String>`      | Passphrase for phrasephrase protected secret keys. For gpg version > 2.1, this is required for passphrase proctected secret keys                  |
+| output    | `Option<String>`      | Path that the exported key file will be saved to, if `None` default to `~/Downloads/gnupg_output/exported_secret_key/secret_key_< TIMESTAMP >.asc`|
+
+> [!NOTE] 
+> If there are 2 or more secret key that are passphrase proctected ( but different passphrase ) are being exported, only keys that are protected by the provided passphrase and keys that aren't passphrase protected will be exported. ( as GPG can only read 1 passphrase at a time from STDIN)
+
+Example:
+```rust
+use crab_gnupg::gnupg::GPG;
+
+let gpg:Result<GPG, GPGError> = GPG::init(None, None, true)
+let result:Result<Vec<ListKeyResult>, GPGError> = gpg.export_secret_key(None, None, None);
