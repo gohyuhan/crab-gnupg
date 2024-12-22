@@ -1,7 +1,6 @@
 <p style="font-size: 36px;">🚧 Under Constuction 🚧</p>
 
 # ⚙️ Usage
-
 - [Initialize gpg](#initialize-gpg)
 - [Generate key](#generate-key)
 - [List keys](#list-keys)
@@ -22,6 +21,10 @@
 - [CmdResult](#cmdresult)
 - [GPGError](#gpgerror)
 - [ListKeyResult](#listkeyresult)
+
+&nbsp;
+# #️⃣ Enum
+- [TrustLevel](#trustlevel)
 
 &nbsp;
 ## Initialize gpg
@@ -144,7 +147,7 @@ To export secret gpg key, you can use the function of `export_secret_key()` prov
 | parameter | type                  | description                                                                                                                                       |
 |-----------|-----------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|
 | key_id    | `Option<Vec<String>>` | List of keyid(s) to export, if `None`, all secret keys will be exported                                                                           |
-| passphrase| `Option<String>`      | Passphrase for phrasephrase protected secret keys. For gpg version > 2.1, this is required for passphrase proctected secret keys                  |
+| passphrase| `Option<String>`      | Passphrase for passphrase protected secret keys. For gpg version > 2.1, this is required for passphrase proctected secret keys                    |
 | output    | `Option<String>`      | Path that the exported key file will be saved to, if `None` default to `~/Downloads/gnupg_output/exported_secret_key/secret_key_< TIMESTAMP >.asc`|
 
 > [!NOTE] 
@@ -156,3 +159,60 @@ use crab_gnupg::gnupg::GPG;
 
 let gpg:Result<GPG, GPGError> = GPG::init(None, None, true)
 let result:Result<Vec<ListKeyResult>, GPGError> = gpg.export_secret_key(None, None, None);
+```
+
+&nbsp;
+## Trust key
+To trust gpg key, you can use the function of `trust_key()` provided by `GPG`.  
+`trust_key()` takes in 2 parameters in the following sequence
+| parameter    | type          | description                                                                                 |
+|--------------|---------------|---------------------------------------------------------------------------------------------|
+| fingerprints | `Vec<String>` | List of keyid(s) to trust                                                                   |
+| trust_level  | `TrustLevel`  | Trust level to set for the keys, see [TrustLevel](#trustlevel) for all available option     |
+
+Example:
+```rust
+use crab_gnupg::{
+    gnupg::GPG,
+    utils::enums::TrustLevel
+};
+
+let gpg:Result<GPG, GPGError> = GPG::init(None, None, true)
+let result: Result<CmdResult, GPGError> = gpg.trust_key(vec!["< FINGERPRINT >".to_string()], TrustLevel::Fully);
+```
+
+&nbsp;
+## Sign key
+To sign gpg key, you can use the function of `sign_key()` provided by `GPG`.  
+`sign_key()` takes in 4 parameters in the following sequence
+| parameter      | type                   | description                                                             |
+|----------------|------------------------|-------------------------------------------------------------------------|
+| signing_key_id | `String`               | Keyid of the key that was used for signing                              |
+| target_key_id  | `String`               | Keyid of the key that will be signed                                    |
+| passphrase     | `Option<String>`       | Passphrase for passphrase protected secret keys (signing key)           |
+| extra_args     | `Option<Vec<String>>`  | Additional args provided for signing keys                               |
+
+Example:
+```rust
+use crab_gnupg::gnupg::GPG;
+
+let gpg:Result<GPG, GPGError> = GPG::init(None, None, true)
+let result: Result<CmdResult, GPGError> = gpg.sign_key(
+    "< SIGNING_KEY_ID >".to_string(), 
+    "< TARGET_KEY_ID >".to_string(), 
+    None, 
+    None
+);
+```
+
+---
+&nbsp;
+## TrustLevel
+An enum to represent the level of trust for trusting a gpg key. The options are:
+
+- Expired
+- Undefined
+- Never
+- Marginal
+- Fully
+- Ultimate
