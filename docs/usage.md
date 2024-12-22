@@ -9,7 +9,7 @@
 - [Export public keys](#export-public-keys)
 - [Export secret keys](#export-secret-keys)
 - [Trust key](#trust-key)
-- [Sign key](#aign-key)
+- [Sign key](#sign-key)
 - [Encrypt file](#encrypt-file)
 - [Decrypt file](#decrypt-file)
 - [Sign file](#sign-file)
