@@ -21,6 +21,9 @@
 - [CmdResult](#cmdresult)
 - [GPGError](#gpgerror)
 - [ListKeyResult](#listkeyresult)
+- [EncryptOption](#encrypt-option)
+- [DecryptOption](#decrypt-option)
+- [SignOption](#sign-option)
 
 &nbsp;
 # #️⃣ Enum
@@ -203,6 +206,76 @@ let result: Result<CmdResult, GPGError> = gpg.sign_key(
     None, 
     None
 );
+```
+
+&nbsp;
+## Encrypt file
+To encrypt file, you can use the function of `encrypt()` provided by `GPG`.  
+`encrypt()` takes in 1 parameters in the following sequence
+| parameter         | type                   | description                                                                                          |
+|-------------------|------------------------|------------------------------------------------------------------------------------------------------|
+| encryption_option | `EncryptOption`        | a struct to represent GPG encryption option. Refer [EncryptOption](#encrypt-option) for more detail  |
+
+Example:
+```rust
+use crab_gnupg::gnupg::GPG;
+
+let gpg:Result<GPG, GPGError> = GPG::init(None, None, true)
+let options: EncryptOption = EncryptOption::default(Some(file), None, vec![" <receipient> ".to_string()], " <OUTPUT> ".to_string());
+let result: Result<CmdResult, GPGError> = gpg.encrypt(option);
+```
+
+&nbsp;
+## Decrypt file
+To decrypt file, you can use the function of `decrypt()` provided by `GPG`.  
+`decrypt()` takes in 1 parameters in the following sequence
+| parameter      | type                   | description                                                                                          |
+|----------------|------------------------|------------------------------------------------------------------------------------------------------|
+| decrypt_option | `DecryptOption`        | a struct to represent GPG decrypt option. Refer [DecryptOption](#decrypt-option) for more detail  |
+
+Example:
+```rust
+use crab_gnupg::gnupg::GPG;
+
+let gpg:Result<GPG, GPGError> = GPG::init(None, None, true)
+let options: DecryptOption = DecryptOption::default(Some(file), None, " <receipient> ".to_string(), Some(" <KEY_PASSPHRASE> ".to_string()), " <OUTPUT> ".to_string());
+let result: Result<CmdResult, GPGError> = gpg.decrypt(option);
+```
+
+&nbsp;
+## Sign file
+To sign file, you can use the function of `sign()` provided by `GPG`.  
+`sign()` takes in 1 parameters in the following sequence
+| parameter   | type                | description                                                                              |
+|-------------|---------------------|------------------------------------------------------------------------------------------|
+| sign_option | `SignOption`        | a struct to represent GPG sign option. Refer [SignOption](#sign-option) for more detail  |
+
+Example:
+```rust
+use crab_gnupg::gnupg::GPG;
+
+let gpg:Result<GPG, GPGError> = GPG::init(None, None, true)
+let options: SignOption = SignOption::default(Some(file), None, " <keyid> ".to_string(), Some(" <KEY_PASSPHRASE> ".to_string()), " <OUTPUT> ".to_string());
+let result: Result<CmdResult, GPGError> = gpg.sign(option);
+```
+
+&nbsp;
+## Verify file
+To verify file, you can use the function of `verify_file()` provided by `GPG`.  
+`verify_file()` takes in 4 parameters in the following sequence
+| parameter           | type                  | description                                                |
+|---------------------|-----------------------|------------------------------------------------------------|
+| file                | `Option<File>`        | File object                                                |
+| file_path           | `Option<String>`      | Path for the file, will be ignored if file is provided     |
+| signature_file_path | `Option<String>`      | Path to the signature file ( if signature is detached )    |
+| extra_args          | `Option<Vec<String>>` | Additional args provided for verifying file                |
+
+Example:
+```rust
+use crab_gnupg::gnupg::GPG;
+
+let gpg:Result<GPG, GPGError> = GPG::init(None, None, true)
+let result: Result<CmdResult, GPGError> = gpg.verify_file(Some(file), None, None, None);
 ```
 
 ---
