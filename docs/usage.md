@@ -32,7 +32,7 @@
 &nbsp;
 ## Initialize gpg
 Before any operation of gpg, a gpg object need to be initialized to get access to other gpg function.  
-`GPG::init()` takes in 3 parameter in the following sequence
+`GPG::init()` takes in 3 parameter in the following sequence.
 | parameter  | type             | description                                                                                |
 |------------|------------------|--------------------------------------------------------------------------------------------|
 | homedir    | `Option<String>` | Path where gpg store key, if `None` default to `~/.gnupg` for unix or `~/gnupg` for window |
@@ -49,7 +49,7 @@ let gpg:Result<GPG, GPGError> = GPG::init(None, None, true)
 &nbsp;
 ## Generate key
 To generate gpg key, you can use the function of `gen_key()` provided by `GPG`.  
-`gen_key()` takes in 2 parameters in the following sequence
+`gen_key()` takes in 2 parameters in the following sequence.
 | parameter        | type                              | description                                                                                                   |
 |------------------|-----------------------------------|---------------------------------------------------------------------------------------------------------------|
 | key_passphrase   | `Option<String>`                  | Passphrase for passphrase protected key, if not provided, the key generated will not be passphrase protected  |
@@ -66,7 +66,7 @@ let result:Result<CmdResult, GPGError> = gpg.gen_key("example-passphrase".to_str
 &nbsp;
 ## List keys
 To list gpg key, you can use the function of `list_keys()` provided by `GPG`.  
-`list_keys()` takes in 3 parameters in the following sequence
+`list_keys()` takes in 3 parameters in the following sequence.
 | parameter| type                  | description                                                                                                  |
 |----------|-----------------------|--------------------------------------------------------------------------------------------------------------|
 | secret   | `bool`                | If `true` list secret keys instead of public keys                                                            |
@@ -84,7 +84,7 @@ let result:Result<Vec<ListKeyResult>, GPGError> = gpg.list_keys()
 &nbsp;
 ## Delete keys
 To delete gpg key, you can use the function of `delete_keys()` provided by `GPG`.  
-`delete_keys()` takes in 4 parameters in the following sequence
+`delete_keys()` takes in 4 parameters in the following sequence.
 | parameter    | type               | description                                       |
 |--------------|--------------------|---------------------------------------------------|
 | fingerprints | `Vec<String>`      | List of fingerprints of keys to delete            |
@@ -103,7 +103,7 @@ let result:Result<Vec<ListKeyResult>, GPGError> = gpg.delete_keys(vec!["< FINGER
 &nbsp;
 ## Import keys
 To import gpg key, you can use the function of `import_key()` provided by `GPG`.  
-`import_key()` takes in 4 parameters in the following sequence
+`import_key()` takes in 4 parameters in the following sequence.
 | parameter  | type                  | description                                                                                            |
 |------------|-----------------------|--------------------------------------------------------------------------------------------------------|
 | file       | `Option<File>`        | File for importing keys ( will be priotize if provided )                                               |
@@ -129,7 +129,7 @@ let result:Result<Vec<ListKeyResult>, GPGError> = gpg.import_key(None, Some("< F
 &nbsp;
 ## Export public keys
 To export public gpg key, you can use the function of `export_public_key()` provided by `GPG`.  
-`export_public_key()` takes in 2 parameters in the following sequence
+`export_public_key()` takes in 2 parameters in the following sequence.
 | parameter | type                  | description                                                                                                                                       |
 |-----------|-----------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|
 | key_id    | `Option<Vec<String>>` | List of keyid(s) to export, if `None`, all public keys will be exported                                                                           |
@@ -146,7 +146,7 @@ let result:Result<Vec<ListKeyResult>, GPGError> = gpg.export_public_key(None, No
 &nbsp;
 ## Export secret keys
 To export secret gpg key, you can use the function of `export_secret_key()` provided by `GPG`.  
-`export_secret_key()` takes in 3 parameters in the following sequence
+`export_secret_key()` takes in 3 parameters in the following sequence.
 | parameter | type                  | description                                                                                                                                       |
 |-----------|-----------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|
 | key_id    | `Option<Vec<String>>` | List of keyid(s) to export, if `None`, all secret keys will be exported                                                                           |
@@ -167,7 +167,7 @@ let result:Result<Vec<ListKeyResult>, GPGError> = gpg.export_secret_key(None, No
 &nbsp;
 ## Trust key
 To trust gpg key, you can use the function of `trust_key()` provided by `GPG`.  
-`trust_key()` takes in 2 parameters in the following sequence
+`trust_key()` takes in 2 parameters in the following sequence.
 | parameter    | type          | description                                                                                 |
 |--------------|---------------|---------------------------------------------------------------------------------------------|
 | fingerprints | `Vec<String>` | List of keyid(s) to trust                                                                   |
@@ -187,7 +187,7 @@ let result: Result<CmdResult, GPGError> = gpg.trust_key(vec!["< FINGERPRINT >".t
 &nbsp;
 ## Sign key
 To sign gpg key, you can use the function of `sign_key()` provided by `GPG`.  
-`sign_key()` takes in 4 parameters in the following sequence
+`sign_key()` takes in 4 parameters in the following sequence.
 | parameter      | type                   | description                                                             |
 |----------------|------------------------|-------------------------------------------------------------------------|
 | signing_key_id | `String`               | Keyid of the key that was used for signing                              |
@@ -211,7 +211,7 @@ let result: Result<CmdResult, GPGError> = gpg.sign_key(
 &nbsp;
 ## Encrypt file
 To encrypt file, you can use the function of `encrypt()` provided by `GPG`.  
-`encrypt()` takes in 1 parameters in the following sequence
+`encrypt()` takes in 1 parameters in the following sequence.
 | parameter         | type                   | description                                                                                          |
 |-------------------|------------------------|------------------------------------------------------------------------------------------------------|
 | encryption_option | `EncryptOption`        | a struct to represent GPG encryption option. Refer [EncryptOption](#encrypt-option) for more detail  |
@@ -228,7 +228,7 @@ let result: Result<CmdResult, GPGError> = gpg.encrypt(option);
 &nbsp;
 ## Decrypt file
 To decrypt file, you can use the function of `decrypt()` provided by `GPG`.  
-`decrypt()` takes in 1 parameters in the following sequence
+`decrypt()` takes in 1 parameters in the following sequence.
 | parameter      | type                   | description                                                                                          |
 |----------------|------------------------|------------------------------------------------------------------------------------------------------|
 | decrypt_option | `DecryptOption`        | a struct to represent GPG decrypt option. Refer [DecryptOption](#decrypt-option) for more detail  |
@@ -245,7 +245,7 @@ let result: Result<CmdResult, GPGError> = gpg.decrypt(option);
 &nbsp;
 ## Sign file
 To sign file, you can use the function of `sign()` provided by `GPG`.  
-`sign()` takes in 1 parameters in the following sequence
+`sign()` takes in 1 parameters in the following sequence.
 | parameter   | type                | description                                                                              |
 |-------------|---------------------|------------------------------------------------------------------------------------------|
 | sign_option | `SignOption`        | a struct to represent GPG sign option. Refer [SignOption](#sign-option) for more detail  |
@@ -262,7 +262,7 @@ let result: Result<CmdResult, GPGError> = gpg.sign(option);
 &nbsp;
 ## Verify file
 To verify file, you can use the function of `verify_file()` provided by `GPG`.  
-`verify_file()` takes in 4 parameters in the following sequence
+`verify_file()` takes in 4 parameters in the following sequence.
 | parameter           | type                  | description                                                |
 |---------------------|-----------------------|------------------------------------------------------------|
 | file                | `Option<File>`        | File object                                                |
