@@ -1,5 +1,3 @@
-# 🚧 readme is still under constuction, there will be mistake 🚧
-
 # crab-gnupg
 
 crab-gnupg was a wrapper for the gnupg command line tool written in rust. 
