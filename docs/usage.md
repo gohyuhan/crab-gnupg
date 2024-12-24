@@ -280,6 +280,35 @@ let result: Result<CmdResult, GPGError> = gpg.verify_file(Some(file), None, None
 
 ---
 &nbsp;
+## GPG
+| parameter           | type                              | description                                                                                                        |
+|---------------------|-----------------------------------|--------------------------------------------------------------------------------------------------------------------|
+| homedir             | `String`                          | A path to a directory where the local key were at.                                                                 |
+| output_dir          | `String`                          | A path to a directory where the output files from gpg will save to.                                                |
+| env                 | `Option<HashMap<String, String>>` | A haspmap of env variables that would be passed to process.                                                        |
+| keyrings            | `Option<Vec<String>>`             | A list of name of keyring files to use. If provided, the default keyring will be ignored.  (Currently not in used) |
+| secret_keyring      | `Option<Vec<String>>`             | A list of name of secret keyring files to use. (Currently not in used)                                             |
+| options             | `Option<Vec<String>>`             | Additional arguments to be passed to gpg                                                                           |
+| armour              | `bool`                            | A boolean to indicate if the output should be armored                                                              |
+| version             | `f32`                             | The major minor version of gpg, should only be set by system, user should not set this ex. 2.4                     |
+| full_version        | `String`                          | The full version of gpg, should only be set by system, user should not set this ex. 2.4.6                          |
+
+
+&nbsp;
+## CmdResult
+| parameter           | type                                   | description                                                                                                        |
+|---------------------|----------------------------------------|--------------------------------------------------------------------------------------------------------------------|
+| raw_data            | `Option<String>`                       | Raw data of gpg command response and output                                                                        |
+| return_code         | `Option<i32>`                          | Return status code of gpg operation                                                                                |
+| status              | `Option<String>`                       | Status of the current Command Result                                                                               |
+| status_message      | `Option<String>`                       | Description about status                                                                                           |
+| operation           | `Operation`                            | The current gpg operation                                                                                          |
+| debug_log           | `Option<Vec<String>>`                  | Log for debug purpose                                                                                              |
+| problem             | `Option<Vec<HashMap<String, String>>>` | Description for more insight about the problem if gpg operation fail                                               |
+| success             | `bool`                                 | If the operation is a success                                                                                      |
+
+---
+&nbsp;
 ## TrustLevel
 An enum to represent the level of trust for trusting a gpg key. The options are:
 

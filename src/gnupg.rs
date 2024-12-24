@@ -31,7 +31,7 @@ pub struct GPG {
     pub homedir: String,
     // a path to a directory where the output files from gpg will save to
     pub output_dir: String,
-    // a haspmap ( or dict (in python) ) of env variables that would be passed to process
+    // a haspmap of env variables that would be passed to process
     pub env: Option<HashMap<String, String>>,
     // a list of name of keyring files to use. If provided, the default keyring will be ignored.
     pub keyrings: Option<Vec<String>>,
