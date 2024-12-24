@@ -17,7 +17,8 @@ It was design to make it easier to interact with gnupg command line tool for pro
 
 ## Description
 This project ``crab-gnupg`` allows you to easily interact with the gnupg command line tool with rust. It provides a simple and easy-to-use interface for performing various gnupg operations, such as encrypting, decrypting, signing, and verifying file as well as generating and managing keys. This project was build and tested using gnupg version 2.4.x. More modification and changes will be done to support gnupg version 1.4.x. in the future.
-> **Important:** You will still need to install gnupg on your system.
+> [!NOTE] 
+> You will still need to install gnupg on your system.
 
 ## Installation
 To install gnupg, you can use the following command:
