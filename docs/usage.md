@@ -1,5 +1,3 @@
-<p style="font-size: 36px;">🚧 Under Constuction 🚧</p>
-
 # ⚙️ Usage
 - [Initialize gpg](#initialize-gpg)
 - [Generate key](#generate-key)
@@ -21,9 +19,9 @@
 - [CmdResult](#cmdresult)
 - [GPGError](#gpgerror)
 - [ListKeyResult](#listkeyresult)
-- [EncryptOption](#encrypt-option)
-- [DecryptOption](#decrypt-option)
-- [SignOption](#sign-option)
+- [EncryptOption](#encryptoption)
+- [DecryptOption](#decryptoption)
+- [SignOption](#signoption)
 
 &nbsp;
 # #️⃣ Enum
@@ -214,14 +212,14 @@ To encrypt file, you can use the function of `encrypt()` provided by `GPG`.
 `encrypt()` takes in 1 parameters in the following sequence.
 | parameter         | type                   | description                                                                                          |
 |-------------------|------------------------|------------------------------------------------------------------------------------------------------|
-| encryption_option | `EncryptOption`        | a struct to represent GPG encryption option. Refer [EncryptOption](#encrypt-option) for more detail  |
+| encryption_option | `EncryptOption`        | a struct to represent GPG encryption option. Refer [EncryptOption](#encryptoption) for more detail  |
 
 Example:
 ```rust
 use crab_gnupg::gnupg::GPG;
 
 let gpg:Result<GPG, GPGError> = GPG::init(None, None, true)
-let options: EncryptOption = EncryptOption::default(Some(file), None, vec![" <receipient> ".to_string()], " <OUTPUT> ".to_string());
+let options: EncryptOption = EncryptOption::default(Some(file), None, vec![" <receipient> ".to_string()], Some(" <OUTPUT> ".to_string()));
 let result: Result<CmdResult, GPGError> = gpg.encrypt(option);
 ```
 
@@ -231,14 +229,14 @@ To decrypt file, you can use the function of `decrypt()` provided by `GPG`.
 `decrypt()` takes in 1 parameters in the following sequence.
 | parameter      | type                   | description                                                                                          |
 |----------------|------------------------|------------------------------------------------------------------------------------------------------|
-| decrypt_option | `DecryptOption`        | a struct to represent GPG decrypt option. Refer [DecryptOption](#decrypt-option) for more detail  |
+| decrypt_option | `DecryptOption`        | a struct to represent GPG decrypt option. Refer [DecryptOption](#decryptoption) for more detail  |
 
 Example:
 ```rust
 use crab_gnupg::gnupg::GPG;
 
 let gpg:Result<GPG, GPGError> = GPG::init(None, None, true)
-let options: DecryptOption = DecryptOption::default(Some(file), None, " <receipient> ".to_string(), Some(" <KEY_PASSPHRASE> ".to_string()), " <OUTPUT> ".to_string());
+let options: DecryptOption = DecryptOption::default(Some(file), None, " <receipient> ".to_string(), Some(" <KEY_PASSPHRASE> ".to_string()), Some(" <OUTPUT> ".to_string()));
 let result: Result<CmdResult, GPGError> = gpg.decrypt(option);
 ```
 
@@ -248,14 +246,14 @@ To sign file, you can use the function of `sign()` provided by `GPG`.
 `sign()` takes in 1 parameters in the following sequence.
 | parameter   | type                | description                                                                              |
 |-------------|---------------------|------------------------------------------------------------------------------------------|
-| sign_option | `SignOption`        | a struct to represent GPG sign option. Refer [SignOption](#sign-option) for more detail  |
+| sign_option | `SignOption`        | a struct to represent GPG sign option. Refer [SignOption](#signoption) for more detail  |
 
 Example:
 ```rust
 use crab_gnupg::gnupg::GPG;
 
 let gpg:Result<GPG, GPGError> = GPG::init(None, None, true)
-let options: SignOption = SignOption::default(Some(file), None, " <keyid> ".to_string(), Some(" <KEY_PASSPHRASE> ".to_string()), " <OUTPUT> ".to_string());
+let options: SignOption = SignOption::default(Some(file), None, " <keyid> ".to_string(), Some(" <KEY_PASSPHRASE> ".to_string()), Some(" <OUTPUT> ".to_string()));
 let result: Result<CmdResult, GPGError> = gpg.sign(option);
 ```
 
@@ -306,6 +304,214 @@ let result: Result<CmdResult, GPGError> = gpg.verify_file(Some(file), None, None
 | debug_log           | `Option<Vec<String>>`                  | Log for debug purpose                                                                                              |
 | problem             | `Option<Vec<HashMap<String, String>>>` | Description for more insight about the problem if gpg operation fail                                               |
 | success             | `bool`                                 | If the operation is a success                                                                                      |
+
+&nbsp;
+## GPGError
+| parameter           | type                                   | description                                                                                                        |
+|---------------------|----------------------------------------|--------------------------------------------------------------------------------------------------------------------|
+| error_type          | `GPGErrorType`                         | The type of error                                                                                                  |
+| cmd_result          | `Option<CmdResult>`                    | Provide more insight if error occured during the gpg cmd process                                                   |
+
+&nbsp;
+## ListKeyResult
+Check https://github.com/gpg/gnupg/blob/master/doc/DETAILS for full description of each corresponding parameter
+| parameter           | type                                   | description                                                                                                        |
+|---------------------|----------------------------------------|--------------------------------------------------------------------------------------------------------------------|
+| type                | `String`                               | Check https://github.com/gpg/gnupg/blob/master/doc/DETAILS#field-1---type-of-record                                |
+| validity            | `String`                               | Check https://github.com/gpg/gnupg/blob/master/doc/DETAILS#field-2---validity                                      |
+| length              | `String`                               | Check https://github.com/gpg/gnupg/blob/master/doc/DETAILS#field-3---key-length                                    |
+| algo                | `String`                               | Check https://github.com/gpg/gnupg/blob/master/doc/DETAILS#field-4---public-key-algorithm                          |
+| keyid               | `String`                               | Check https://github.com/gpg/gnupg/blob/master/doc/DETAILS#field-5---keyid                                         |
+| date                | `String`                               | Check https://github.com/gpg/gnupg/blob/master/doc/DETAILS#field-6---creation-date                                 |
+| expire              | `String`                               | Check https://github.com/gpg/gnupg/blob/master/doc/DETAILS#field-7---expiration-date                               |
+| dummy               | `String`                               | Check https://github.com/gpg/gnupg/blob/master/doc/DETAILS#field-8---certificate-sn-uid-hash-trust-signature-info  |
+| ownertrust          | `String`                               | Check https://github.com/gpg/gnupg/blob/master/doc/DETAILS#field-9----ownertrust                                   |
+| uid                 | `String`                               | Check https://github.com/gpg/gnupg/blob/master/doc/DETAILS#field-10---user-id                                      |
+| sig                 | `String`                               | Check https://github.com/gpg/gnupg/blob/master/doc/DETAILS#field-11---signature-class                              |
+| cap                 | `String`                               | Check https://github.com/gpg/gnupg/blob/master/doc/DETAILS#field-12---key-capabilities                             |
+| issuer              | `String`                               | Check https://github.com/gpg/gnupg/blob/master/doc/DETAILS#field-13---issuer-certificate-fingerprint-or-other-info |
+| flag                | `String`                               | Check https://github.com/gpg/gnupg/blob/master/doc/DETAILS#field-14---flag-field                                   |
+| token               | `String`                               | Check https://github.com/gpg/gnupg/blob/master/doc/DETAILS#field-15---sn-of-a-token                                |
+| hash                | `String`                               | Check https://github.com/gpg/gnupg/blob/master/doc/DETAILS#field-16---hash-algorithm                               |
+| curve               | `String`                               | Check https://github.com/gpg/gnupg/blob/master/doc/DETAILS#field-17---curve-name                                   |
+| compliance          | `String`                               | Check https://github.com/gpg/gnupg/blob/master/doc/DETAILS#field-18---compliance-flags                             |
+| updated             | `String`                               | Check https://github.com/gpg/gnupg/blob/master/doc/DETAILS#field-19---last-update                                  |
+| origin              | `String`                               | Check https://github.com/gpg/gnupg/blob/master/doc/DETAILS#field-20---origin                                       |
+| comment             | `String`                               | Check https://github.com/gpg/gnupg/blob/master/doc/DETAILS#field-21---comment                                      |
+| keygrip             | `String`                               | Keygrip                                                                                                            |
+| uids                | `Vec<String>`                          | List of uid(s)                                                                                                     |
+| sigs                | `Vec<Vec<String>>`                     | List of sig(s)                                                                                                     |
+| subkeys             | `Vec<Subkey>`                          | List of subkey(s)                                                                                                  |
+| fingerprint         | `String`                               | Fingerprint of the key                                                                                             |
+
+&nbsp;
+## EncryptOption
+EncryptOption was taken in by `encrypt()` function provided by `GPG`.
+| parameter           | type                                   | description                                                                                                                                                                   |
+|---------------------|----------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| file                | `Option<File>`                         | File object                                                                                                                                                                   |
+| file_path           | `Option<String>`                       | Path to file                                                                                                                                                                  |
+| recipients          | `Option<Vec<String>>`                  | List of receipients keyid                                                                                                                                                     |
+| sign                | `bool`                                 | Whether to sign the file                                                                                                                                                      |
+| sign_key            | `Option<String>`                       | Keyid to sign the file                                                                                                                                                        |
+| symmetric           | `bool`                                 | Whether to encrypt symmetrically  [passphrase must be provided if symmetric is true]                                                                                          |
+| symmetric_algo      | `Option<String>`                       | Symmetric algorithm to use [if not provided a highly ranked cipher willl be chosen]                                                                                           |
+| always_trust        | `bool`                                 | Whether to always trust keys                                                                                                                                                  |
+| passphrase          | `Option<String>`                       | Passphrase to use for symmetric encryption [required if symmetric is true]                                                                                                    |
+| output              | `Option<String>`                       | Path to write the encrypted output, will use the default output dir set in GPG if not provided and with file name as [<encryption_type>_encrypted_file_<datetime>.< extension >]|
+| extra_args          | `Option<Vec<String>>`                  | Extra arguments to pass to gpg                                                                                                                                                |
+
+It provided three options to generate the structure type based on your needs:
+
+### `default()`
+Encryption with just keys and always trust will be true.  
+| parameter           | type                                   | description                                                                                                                                                                   |
+|---------------------|----------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| file                | `Option<File>`                         | File object                                                                                                                                                                   |
+| file_path           | `Option<String>`                       | Path to file                                                                                                                                                                  |
+| recipients          | `Vec<String>`                          | List of receipients keyid                                                                                                                                                     |
+| output              | `Option<String>`                       | Path to write the encrypted output, will use the default output dir set in GPG if not provided and with file name as [<encryption_type>_encrypted_file_<datetime>.< extension >]|
+
+Example:
+```rust
+use crab_gnupg::gnupg::EncryptOption;
+
+let options: EncryptOption = EncryptOption::default(Some(file), None, vec![" <receipient> ".to_string()], Some(" <OUTPUT> ".to_string()));
+```
+
+### `with_symmetric()`
+Encryption with passphrase instead of keys and always trust will be true.  
+| parameter           | type                                   | description                                                                                                                                                                   |
+|---------------------|----------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| file                | `Option<File>`                         | File object                                                                                                                                                                   |
+| file_path           | `Option<String>`                       | Path to file                                                                                                                                                                  |
+| symmetric_algo      | `Option<String>`                       | Symmetric algorithm to use [if not provided a highly ranked cipher willl be chosen]                                                                                           |
+| passphrase          | `String`                               | Passphrase to use for symmetric encryption [required if symmetric is true]                                                                                                    |
+| output              | `Option<String>`                       | Path to write the encrypted output, will use the default output dir set in GPG if not provided and with file name as [<encryption_type>_encrypted_file_<datetime>.< extension >]|
+
+Example:
+```rust
+use crab_gnupg::gnupg::EncryptOption;
+
+let options: EncryptOption = EncryptOption::with_symmetric(Some(file), None, None, " <PASSPHRASE> ".to_string(), Some(" <OUTPUT> ".to_string()));
+```
+
+### `with_key_and_symmetric()`
+Encryption with both passphrase and keys and always trust will be true.  
+| parameter           | type                                   | description                                                                                                                                                                   |
+|---------------------|----------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| file                | `Option<File>`                         | File object                                                                                                                                                                   |
+| file_path           | `Option<String>`                       | Path to file                                                                                                                                                                  |
+| recipients          | `Option<Vec<String>>`                  | List of receipients keyid                                                                                                                                                     |
+| symmetric_algo      | `Option<String>`                       | Symmetric algorithm to use [if not provided a highly ranked cipher willl be chosen]                                                                                           |
+| passphrase          | `String`                               | Passphrase to use for symmetric encryption [required if symmetric is true]                                                                                                    |
+| output              | `Option<String>`                       | Path to write the encrypted output, will use the default output dir set in GPG if not provided and with file name as [<encryption_type>_encrypted_file_<datetime>.< extension >]|
+
+Example:
+```rust
+use crab_gnupg::gnupg::EncryptOption;
+
+let options: EncryptOption = EncryptOption::with_key_and_symmetric(Some(file), None, Some(vec![" <receipient> ".to_string()]), None, " <PASSPHRASE> ".to_string(), Some(" <OUTPUT> ".to_string()));
+```
+
+&nbsp;
+## DecryptOption
+DecryptOption was taken in by `decrypt()` function provided by `GPG`.
+| parameter           | type                                   | description                                                                                                                                                                   |
+|---------------------|----------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| file                | `Option<File>`                         | File object                                                                                                                                                                   |
+| file_path           | `Option<String>`                       | Path to file                                                                                                                                                                  |
+| recipient           | `Option<String>`                       | Receipient keyid                                                                                                                                                              |
+| always_trust        | `bool`                                 | Whether to always trust keys                                                                                                                                                  |
+| passphrase          | `Option<String>`                       | Passphrase for symmetric encrypted file                                                                                                                                       |
+| key_passphrase      | `Option<String>`                       | Passphrase for file that is encrypted using a passphrase protected private key                                                                                                |
+| output              | `Option<String>`                       | Path to write the decrypted output, will use the default output dir set in GPG if not provided and with file name as [decrypted_file_<datetime>.< extension >]                  |
+| extra_args          | `Option<Vec<String>>`                  | Extra arguments to pass to gpg                                                                                                                                                |
+
+It provided two options to generate the structure type based on your needs:
+
+### `default()`
+Decryption with secret key and always trust will be true.  
+| parameter           | type                                   | description                                                                                                                                                                   |
+|---------------------|----------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| file                | `Option<File>`                         | File object                                                                                                                                                                   |
+| file_path           | `Option<String>`                       | Path to file                                                                                                                                                                  |
+| recipient           | `String`                               | Receipient keyid                                                                                                                                                              |
+| key_passphrase      | `Option<String>`                       | Passphrase for file that is encrypted using a passphrase protected private key                                                                                                |
+| output              | `Option<String>`                       | Path to write the decrypted output, will use the default output dir set in GPG if not provided and with file name as [decrypted_file_<datetime>.< extension >]                  |
+
+Example:
+```rust
+use crab_gnupg::gnupg::DecryptOption;
+
+let options: DecryptOption = DecryptOption::default(Some(file), None, " <receipient> ".to_string(), Some(" <KEY_PASSPHRASE> ".to_string()), Some(" <OUTPUT> ".to_string()));
+```
+
+### `with_symmetric()`
+Decryption with passphrase instead of secret keys and always trust will be true.  
+| parameter           | type                                   | description                                                                                                                                                                   |
+|---------------------|----------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| file                | `Option<File>`                         | File object                                                                                                                                                                   |
+| file_path           | `Option<String>`                       | Path to file                                                                                                                                                                  |
+| passphrase          | `String`                               | Passphrase for symmetric encrypted file                                                                                                                                       |
+| output              | `Option<String>`                       | Path to write the decrypted output, will use the default output dir set in GPG if not provided and with file name as [decrypted_file_<datetime>.< extension >]                  |
+
+Example:
+```rust
+use crab_gnupg::gnupg::DecryptOption;
+
+let options: DecryptOption = DecryptOption::with_symmetric(Some(file), None, " <PASSPHRASE> ".to_string(), Some(" <OUTPUT> ".to_string()));
+```
+
+&nbsp;
+## SignOption
+SignOption was taken in by `sign()` function provided by `GPG`.
+| parameter           | type                                   | description                                                                                                                                                                        |
+|---------------------|----------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| file                | `Option<File>`                         | File object                                                                                                                                                                        |
+| file_path           | `Option<String>`                       | Path to file                                                                                                                                                                       |
+| keyid               | `Option<String>`                       | Keyid for signing                                                                                                                                                                  |
+| key_passphrase      | `Option<String>`                       | Passphrase for passphrase protected private key                                                                                                                                    |
+| clearsign           | `bool`                                 | Whether to use clear signing                                                                                                                                                       |
+| detached            | `bool`                                 | Whether to produce a detached signature                                                                                                                                            |
+| output              | `Option<String>`                       | Path to write the detached signature or embedded sign file, will use the default output dir set in GPG if not provided and with file name as [<sign_type>_<datetime>.< sig or gpg >] |
+| extra_args          | `Option<Vec<String>>`                  | Extra arguments to pass to gpg                                                                                                                                                     |
+
+It provided two options to generate the structure type based on your needs:
+
+### `default()`
+Embedded signing with secret key with clearsign.  
+| parameter           | type                                   | description                                                                                                                                                                        |
+|---------------------|----------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| file                | `Option<File>`                         | File object                                                                                                                                                                        |
+| file_path           | `Option<String>`                       | Path to file                                                                                                                                                                       |
+| keyid               | `String`                               | Keyid for signing                                                                                                                                                                  |
+| key_passphrase      | `Option<String>`                       | Passphrase for passphrase protected private key                                                                                                                                    |
+| output              | `Option<String>`                       | Path to write the detached signature or embedded sign file, will use the default output dir set in GPG if not provided and with file name as [<sign_type>_<datetime>.< sig or gpg >] |
+
+Example:
+```rust
+use crab_gnupg::gnupg::SignOption;
+
+let options: SignOption = SignOption::default(Some(file), None, " < KEYID > ".to_string(), Some(" <KEY_PASSPHRASE> ".to_string()), Some(" <OUTPUT> ".to_string()));
+```
+
+### `detached()`
+Detached signing with secret key without clearsign.  
+| parameter           | type                                   | description                                                                                                                                                                        |
+|---------------------|----------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| file                | `Option<File>`                         | File object                                                                                                                                                                        |
+| file_path           | `Option<String>`                       | Path to file                                                                                                                                                                       |
+| keyid               | `String`                               | Keyid for signing                                                                                                                                                                  |
+| key_passphrase      | `Option<String>`                       | Passphrase for passphrase protected private key                                                                                                                                    |
+| output              | `Option<String>`                       | Path to write the detached signature or embedded sign file, will use the default output dir set in GPG if not provided and with file name as [<sign_type>_<datetime>.< sig or gpg >] |
+
+Example:
+```rust
+use crab_gnupg::gnupg::SignOption;
+
+let options: SignOption = SignOption::detached(Some(file), None, " < KEYID > ".to_string(), Some(" <KEY_PASSPHRASE> ".to_string()), Some(" <OUTPUT> ".to_string()));
+```
 
 ---
 &nbsp;
