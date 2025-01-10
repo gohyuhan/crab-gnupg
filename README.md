@@ -49,7 +49,12 @@ cargo add crab-gnupg
 To check out how to use ``crab-gnupg``, check the [docs](docs/usage.md) here
 
 ## Change Logs
+### v0.1.2
+Released: 2024-01-10
+Complete REAME.md and documentation on usage.md page. No changes to the current codebase and functionality.
+
 ### v0.1.1
+Released: 2024-12-12
 Initial crate Publish. This includes GnuPG key managment and file operation like:
 
 - generate key
