@@ -347,29 +347,29 @@ Check https://github.com/gpg/gnupg/blob/master/doc/DETAILS for full description 
 &nbsp;
 ## EncryptOption
 EncryptOption was taken in by `encrypt()` function provided by `GPG`.
-| parameter           | type                                   | description                                                                                                                                                                   |
-|---------------------|----------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| file                | `Option<File>`                         | File object                                                                                                                                                                   |
-| file_path           | `Option<String>`                       | Path to file                                                                                                                                                                  |
-| recipients          | `Option<Vec<String>>`                  | List of receipients keyid                                                                                                                                                     |
-| sign                | `bool`                                 | Whether to sign the file                                                                                                                                                      |
-| sign_key            | `Option<String>`                       | Keyid to sign the file                                                                                                                                                        |
-| symmetric           | `bool`                                 | Whether to encrypt symmetrically  [passphrase must be provided if symmetric is true]                                                                                          |
-| symmetric_algo      | `Option<String>`                       | Symmetric algorithm to use [if not provided a highly ranked cipher willl be chosen]                                                                                           |
-| always_trust        | `bool`                                 | Whether to always trust keys                                                                                                                                                  |
-| passphrase          | `Option<String>`                       | Passphrase to use for symmetric encryption [required if symmetric is true]                                                                                                    |
+| parameter           | type                                   | description                                                                                                                                                                     |
+|---------------------|----------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| file                | `Option<File>`                         | File object                                                                                                                                                                     |
+| file_path           | `Option<String>`                       | Path to file                                                                                                                                                                    |
+| recipients          | `Option<Vec<String>>`                  | List of receipients keyid                                                                                                                                                       |
+| sign                | `bool`                                 | Whether to sign the file                                                                                                                                                        |
+| sign_key            | `Option<String>`                       | Keyid to sign the file                                                                                                                                                          |
+| symmetric           | `bool`                                 | Whether to encrypt symmetrically  [passphrase must be provided if symmetric is true]                                                                                            |
+| symmetric_algo      | `Option<String>`                       | Symmetric algorithm to use [if not provided a highly ranked cipher willl be chosen]                                                                                             |
+| always_trust        | `bool`                                 | Whether to always trust keys                                                                                                                                                    |
+| passphrase          | `Option<String>`                       | Passphrase to use for symmetric encryption [required if symmetric is true]                                                                                                      |
 | output              | `Option<String>`                       | Path to write the encrypted output, will use the default output dir set in GPG if not provided and with file name as [<encryption_type>_encrypted_file_<datetime>.< extension >]|
-| extra_args          | `Option<Vec<String>>`                  | Extra arguments to pass to gpg                                                                                                                                                |
+| extra_args          | `Option<Vec<String>>`                  | Extra arguments to pass to gpg                                                                                                                                                  |
 
 It provided three options to generate the structure type based on your needs:
 
 ### `default()`
 Encryption with just keys and always trust will be true.  
-| parameter           | type                                   | description                                                                                                                                                                   |
-|---------------------|----------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| file                | `Option<File>`                         | File object                                                                                                                                                                   |
-| file_path           | `Option<String>`                       | Path to file                                                                                                                                                                  |
-| recipients          | `Vec<String>`                          | List of receipients keyid                                                                                                                                                     |
+| parameter           | type                                   | description                                                                                                                                                                     |
+|---------------------|----------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| file                | `Option<File>`                         | File object                                                                                                                                                                     |
+| file_path           | `Option<String>`                       | Path to file                                                                                                                                                                    |
+| recipients          | `Vec<String>`                          | List of receipients keyid                                                                                                                                                       |
 | output              | `Option<String>`                       | Path to write the encrypted output, will use the default output dir set in GPG if not provided and with file name as [<encryption_type>_encrypted_file_<datetime>.< extension >]|
 
 Example:
@@ -381,12 +381,12 @@ let options: EncryptOption = EncryptOption::default(Some(file), None, vec![" <re
 
 ### `with_symmetric()`
 Encryption with passphrase instead of keys and always trust will be true.  
-| parameter           | type                                   | description                                                                                                                                                                   |
-|---------------------|----------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| file                | `Option<File>`                         | File object                                                                                                                                                                   |
-| file_path           | `Option<String>`                       | Path to file                                                                                                                                                                  |
-| symmetric_algo      | `Option<String>`                       | Symmetric algorithm to use [if not provided a highly ranked cipher willl be chosen]                                                                                           |
-| passphrase          | `String`                               | Passphrase to use for symmetric encryption [required if symmetric is true]                                                                                                    |
+| parameter           | type                                   | description                                                                                                                                                                     |
+|---------------------|----------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| file                | `Option<File>`                         | File object                                                                                                                                                                     |
+| file_path           | `Option<String>`                       | Path to file                                                                                                                                                                    |
+| symmetric_algo      | `Option<String>`                       | Symmetric algorithm to use [if not provided a highly ranked cipher willl be chosen]                                                                                             |
+| passphrase          | `String`                               | Passphrase to use for symmetric encryption [required if symmetric is true]                                                                                                      |
 | output              | `Option<String>`                       | Path to write the encrypted output, will use the default output dir set in GPG if not provided and with file name as [<encryption_type>_encrypted_file_<datetime>.< extension >]|
 
 Example:
@@ -398,13 +398,13 @@ let options: EncryptOption = EncryptOption::with_symmetric(Some(file), None, Non
 
 ### `with_key_and_symmetric()`
 Encryption with both passphrase and keys and always trust will be true.  
-| parameter           | type                                   | description                                                                                                                                                                   |
-|---------------------|----------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| file                | `Option<File>`                         | File object                                                                                                                                                                   |
-| file_path           | `Option<String>`                       | Path to file                                                                                                                                                                  |
-| recipients          | `Option<Vec<String>>`                  | List of receipients keyid                                                                                                                                                     |
-| symmetric_algo      | `Option<String>`                       | Symmetric algorithm to use [if not provided a highly ranked cipher willl be chosen]                                                                                           |
-| passphrase          | `String`                               | Passphrase to use for symmetric encryption [required if symmetric is true]                                                                                                    |
+| parameter           | type                                   | description                                                                                                                                                                     |
+|---------------------|----------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| file                | `Option<File>`                         | File object                                                                                                                                                                     |
+| file_path           | `Option<String>`                       | Path to file                                                                                                                                                                    |
+| recipients          | `Option<Vec<String>>`                  | List of receipients keyid                                                                                                                                                       |
+| symmetric_algo      | `Option<String>`                       | Symmetric algorithm to use [if not provided a highly ranked cipher willl be chosen]                                                                                             |
+| passphrase          | `String`                               | Passphrase to use for symmetric encryption [required if symmetric is true]                                                                                                      |
 | output              | `Option<String>`                       | Path to write the encrypted output, will use the default output dir set in GPG if not provided and with file name as [<encryption_type>_encrypted_file_<datetime>.< extension >]|
 
 Example:
@@ -425,7 +425,7 @@ DecryptOption was taken in by `decrypt()` function provided by `GPG`.
 | always_trust        | `bool`                                 | Whether to always trust keys                                                                                                                                                  |
 | passphrase          | `Option<String>`                       | Passphrase for symmetric encrypted file                                                                                                                                       |
 | key_passphrase      | `Option<String>`                       | Passphrase for file that is encrypted using a passphrase protected private key                                                                                                |
-| output              | `Option<String>`                       | Path to write the decrypted output, will use the default output dir set in GPG if not provided and with file name as [decrypted_file_<datetime>.< extension >]                  |
+| output              | `Option<String>`                       | Path to write the decrypted output, will use the default output dir set in GPG if not provided and with file name as [decrypted_file_<datetime>.< extension >]                |
 | extra_args          | `Option<Vec<String>>`                  | Extra arguments to pass to gpg                                                                                                                                                |
 
 It provided two options to generate the structure type based on your needs:
@@ -438,7 +438,7 @@ Decryption with secret key and always trust will be true.
 | file_path           | `Option<String>`                       | Path to file                                                                                                                                                                  |
 | recipient           | `String`                               | Receipient keyid                                                                                                                                                              |
 | key_passphrase      | `Option<String>`                       | Passphrase for file that is encrypted using a passphrase protected private key                                                                                                |
-| output              | `Option<String>`                       | Path to write the decrypted output, will use the default output dir set in GPG if not provided and with file name as [decrypted_file_<datetime>.< extension >]                  |
+| output              | `Option<String>`                       | Path to write the decrypted output, will use the default output dir set in GPG if not provided and with file name as [decrypted_file_<datetime>.< extension >]                |
 
 Example:
 ```rust
@@ -454,7 +454,7 @@ Decryption with passphrase instead of secret keys and always trust will be true.
 | file                | `Option<File>`                         | File object                                                                                                                                                                   |
 | file_path           | `Option<String>`                       | Path to file                                                                                                                                                                  |
 | passphrase          | `String`                               | Passphrase for symmetric encrypted file                                                                                                                                       |
-| output              | `Option<String>`                       | Path to write the decrypted output, will use the default output dir set in GPG if not provided and with file name as [decrypted_file_<datetime>.< extension >]                  |
+| output              | `Option<String>`                       | Path to write the decrypted output, will use the default output dir set in GPG if not provided and with file name as [decrypted_file_<datetime>.< extension >]                |
 
 Example:
 ```rust
@@ -466,27 +466,27 @@ let options: DecryptOption = DecryptOption::with_symmetric(Some(file), None, " <
 &nbsp;
 ## SignOption
 SignOption was taken in by `sign()` function provided by `GPG`.
-| parameter           | type                                   | description                                                                                                                                                                        |
-|---------------------|----------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| file                | `Option<File>`                         | File object                                                                                                                                                                        |
-| file_path           | `Option<String>`                       | Path to file                                                                                                                                                                       |
-| keyid               | `Option<String>`                       | Keyid for signing                                                                                                                                                                  |
-| key_passphrase      | `Option<String>`                       | Passphrase for passphrase protected private key                                                                                                                                    |
-| clearsign           | `bool`                                 | Whether to use clear signing                                                                                                                                                       |
-| detached            | `bool`                                 | Whether to produce a detached signature                                                                                                                                            |
+| parameter           | type                                   | description                                                                                                                                                                          |
+|---------------------|----------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| file                | `Option<File>`                         | File object                                                                                                                                                                          |
+| file_path           | `Option<String>`                       | Path to file                                                                                                                                                                         |
+| keyid               | `Option<String>`                       | Keyid for signing                                                                                                                                                                    |
+| key_passphrase      | `Option<String>`                       | Passphrase for passphrase protected private key                                                                                                                                      |
+| clearsign           | `bool`                                 | Whether to use clear signing                                                                                                                                                         |
+| detached            | `bool`                                 | Whether to produce a detached signature                                                                                                                                              |
 | output              | `Option<String>`                       | Path to write the detached signature or embedded sign file, will use the default output dir set in GPG if not provided and with file name as [<sign_type>_<datetime>.< sig or gpg >] |
-| extra_args          | `Option<Vec<String>>`                  | Extra arguments to pass to gpg                                                                                                                                                     |
+| extra_args          | `Option<Vec<String>>`                  | Extra arguments to pass to gpg                                                                                                                                                       |
 
 It provided two options to generate the structure type based on your needs:
 
 ### `default()`
 Embedded signing with secret key with clearsign.  
-| parameter           | type                                   | description                                                                                                                                                                        |
-|---------------------|----------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| file                | `Option<File>`                         | File object                                                                                                                                                                        |
-| file_path           | `Option<String>`                       | Path to file                                                                                                                                                                       |
-| keyid               | `String`                               | Keyid for signing                                                                                                                                                                  |
-| key_passphrase      | `Option<String>`                       | Passphrase for passphrase protected private key                                                                                                                                    |
+| parameter           | type                                   | description                                                                                                                                                                          |
+|---------------------|----------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| file                | `Option<File>`                         | File object                                                                                                                                                                          |
+| file_path           | `Option<String>`                       | Path to file                                                                                                                                                                         |
+| keyid               | `String`                               | Keyid for signing                                                                                                                                                                    |
+| key_passphrase      | `Option<String>`                       | Passphrase for passphrase protected private key                                                                                                                                      |
 | output              | `Option<String>`                       | Path to write the detached signature or embedded sign file, will use the default output dir set in GPG if not provided and with file name as [<sign_type>_<datetime>.< sig or gpg >] |
 
 Example:
@@ -498,12 +498,12 @@ let options: SignOption = SignOption::default(Some(file), None, " < KEYID > ".to
 
 ### `detached()`
 Detached signing with secret key without clearsign.  
-| parameter           | type                                   | description                                                                                                                                                                        |
-|---------------------|----------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| file                | `Option<File>`                         | File object                                                                                                                                                                        |
-| file_path           | `Option<String>`                       | Path to file                                                                                                                                                                       |
-| keyid               | `String`                               | Keyid for signing                                                                                                                                                                  |
-| key_passphrase      | `Option<String>`                       | Passphrase for passphrase protected private key                                                                                                                                    |
+| parameter           | type                                   | description                                                                                                                                                                          |
+|---------------------|----------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| file                | `Option<File>`                         | File object                                                                                                                                                                          |
+| file_path           | `Option<String>`                       | Path to file                                                                                                                                                                         |
+| keyid               | `String`                               | Keyid for signing                                                                                                                                                                    |
+| key_passphrase      | `Option<String>`                       | Passphrase for passphrase protected private key                                                                                                                                      |
 | output              | `Option<String>`                       | Path to write the detached signature or embedded sign file, will use the default output dir set in GPG if not provided and with file name as [<sign_type>_<datetime>.< sig or gpg >] |
 
 Example:
