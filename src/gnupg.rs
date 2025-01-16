@@ -366,6 +366,47 @@ impl GPG {
 
     //*******************************************************
 
+    //                   REVOKE KEY
+
+    //*******************************************************
+    pub fn revoke_key(
+        &self,
+        keyid: String,
+        passphrase: Option<String>,
+        reason_code:u8,
+        revoke_desc: Option<String>,
+        // output: Option<String>
+    ) -> Result<CmdResult, GPGError> {
+        let mut args:Vec<String> = vec![];
+        let mut desc:String = "".to_string();
+        if revoke_desc.is_some() {
+            desc = revoke_desc.as_ref().unwrap().to_string();
+        }
+
+        args.append(&mut vec!["--command-fd".to_string(), "0".to_string(), "--edit-key".to_string(), keyid]);
+        let byte_input:Vec<u8> = format!("revkey\ny\n{}\n{}\ny\nsave\n", reason_code, desc).as_bytes().to_vec();
+
+        let result = handle_cmd_io(
+            Some(args),
+            passphrase,
+            self.version,
+            self.homedir.clone(),
+            self.options.clone(),
+            self.env.clone(),
+            None,
+            None,
+            Some(byte_input),
+            true,
+            false,
+            Operation::RevokeKey,
+        );
+
+        return result;
+    }
+
+
+    //*******************************************************
+
     //                   IMPORT KEY
 
     //*******************************************************

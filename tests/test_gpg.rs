@@ -366,13 +366,33 @@ mod tests {
 
         let result:Result<Vec<ListKeyResult>, GPGError>  = gpg.list_keys(false, None, false);
         let key_list = result.unwrap();
-        print!("{:?}", key_list);
         assert_eq!(key_list[0].subkeys.len(), 1);
-
 
         cleanup_after_tests(name);
     }
 
+    #[test]
+    fn test_revoke_key(){
+        // test revoking a key
+        let name:String  = generate_random_string();
+        let name: &str = name.as_str();
+
+        let gpg: GPG = get_gpg_init(name);
+        let result: Result<CmdResult, GPGError> = gpg.gen_key(Some(get_key_passphrass()), None);
+        assert_eq!(result.unwrap().is_success(), true);
+
+        let result:Result<Vec<ListKeyResult>, GPGError>  = gpg.list_keys(false, None, false);
+        let keyid:String = result.unwrap()[0].keyid.clone();
+
+        let result: Result<CmdResult, GPGError> = gpg.revoke_key(keyid,Some(get_key_passphrass()),3, None);
+        assert_eq!(result.unwrap().is_success(), true);
+
+        let result:Result<Vec<ListKeyResult>, GPGError>  = gpg.list_keys(false, None, false);
+        let key_list = result.unwrap();
+        assert_eq!(key_list[0].validity, "r");
+
+    }
+    
     
     #[test]
     fn test_export_public_key(){
