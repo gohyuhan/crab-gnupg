@@ -348,6 +348,31 @@ mod tests {
         cleanup_after_tests(name);
     }
 
+    #[test]
+    fn test_add_subkey(){
+        // test adding a subkey to an existing master key
+        let name:String  = generate_random_string();
+        let name: &str = name.as_str();
+
+        let gpg: GPG = get_gpg_init(name);
+        let result: Result<CmdResult, GPGError> = gpg.gen_key(Some(get_key_passphrass()), None);
+        assert_eq!(result.unwrap().is_success(), true);
+
+        let result:Result<Vec<ListKeyResult>, GPGError>  = gpg.list_keys(false, None, false);
+        let master_fingerprint:String = result.unwrap()[0].fingerprint.clone();
+
+        let result: Result<CmdResult, GPGError> = gpg.add_subkey(master_fingerprint, Some(get_key_passphrass()), "rsa".to_string(), "encrypt".to_string(), "-".to_string());
+        assert_eq!(result.unwrap().is_success(), true);
+
+        let result:Result<Vec<ListKeyResult>, GPGError>  = gpg.list_keys(false, None, false);
+        let key_list = result.unwrap();
+        print!("{:?}", key_list);
+        assert_eq!(key_list[0].subkeys.len(), 1);
+
+
+        cleanup_after_tests(name);
+    }
+
     
     #[test]
     fn test_export_public_key(){
