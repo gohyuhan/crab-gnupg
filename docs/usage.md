@@ -3,6 +3,7 @@
 - [Generate key](#generate-key)
 - [List keys](#list-keys)
 - [Delete keys](#delete-keys)
+- [Add subkeys](#add-subkeys)
 - [Import keys](#import-keys)
 - [Export public keys](#export-public-keys)
 - [Export secret keys](#export-secret-keys)
@@ -96,6 +97,26 @@ use crab_gnupg::gnupg::GPG;
 
 let gpg:Result<GPG, GPGError> = GPG::init(None, None, true)
 let result:Result<Vec<ListKeyResult>, GPGError> = gpg.delete_keys(vec!["< FINGERPRINT >"], false, false, None);
+```
+
+&nbsp;
+## Add subkeys
+To add a subkey to an existing gpg key, you can use the function of `add_subkey()` provided by `GPG`.  
+`add_subkey()` takes in 5 parameters in the following sequence.
+| parameter    | type               | description                                                                               |
+|--------------|--------------------|-------------------------------------------------------------------------------------------|
+| fingerprint  | `String`           | Finerprint of the parent key that the subkey will be added to                             |
+| passphrase   | `Option<String>`   | Passphraae of the parent key if it was passphrase protected                               |
+| algo         | `String`           | Algorithm of the subkey. e.g) "rsa", "dsa" etc                                            |
+| usage        | `String`           | Capabilities of the subkey. e.g) "sign", "encrypt" etc                                    |
+| expire       | `String`           | When the subkey will expire. Provide in ISO-format YYYY-MM-DD or "-" for no expiration    |
+
+Example:
+```rust
+use crab_gnupg::gnupg::GPG;
+
+let gpg:Result<GPG, GPGError> = GPG::init(None, None, true)
+let result:Result<Vec<ListKeyResult>, GPGError> = gpg.add_subkey(vec!["< FINGERPRINT >"], false, false, None);
 ```
 
 &nbsp;
