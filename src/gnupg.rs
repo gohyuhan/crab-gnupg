@@ -323,6 +323,49 @@ impl GPG {
 
     //*******************************************************
 
+    //                   GENERATE KEY
+
+    //*******************************************************
+    pub fn add_subkey(
+        &self,
+        fingerprint: String,
+        passphrase: Option<String>,
+        algo: String,
+        usage: String,
+        expire: String // ISO format YYYY-MM-DD or "-" for no expiration
+    ) -> Result<CmdResult, GPGError> {
+        if passphrase.is_some() {
+            if !is_passphrase_valid(&mut passphrase.as_ref().unwrap()) {
+                return Err(GPGError::new(
+                    GPGErrorType::PassphraseError("passphrase invalid".to_string()),
+                    None,
+                ));
+            }
+        }
+
+        let args:Vec<String> =vec!["--quick-add-key".to_string(), fingerprint, algo, usage, expire]; 
+
+        let result = handle_cmd_io(
+            Some(args),
+            passphrase,
+            self.version,
+            self.homedir.clone(),
+            self.options.clone(),
+            self.env.clone(),
+            None,
+            None,
+            None,
+            false,
+            false,
+            Operation::AddSubKey,
+        );
+
+        return result;
+
+    }
+
+    //*******************************************************
+
     //                   IMPORT KEY
 
     //*******************************************************
