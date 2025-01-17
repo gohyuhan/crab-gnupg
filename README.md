@@ -49,8 +49,15 @@ cargo add crab-gnupg
 To check out how to use ``crab-gnupg``, check the [docs](docs/usage.md) here
 
 ## Change Logs
+### v0.1.3
+Released: 2025-01-17  
+Introduce 2 more functionality on GPG key management:
+
+- add subkey
+- revoke key
+
 ### v0.1.2
-Released: 2024-01-10  
+Released: 2025-01-10  
 Complete REAME.md and documentation on usage.md page. No changes to the current codebase and functionality.
 
 ### v0.1.1
