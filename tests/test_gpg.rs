@@ -42,7 +42,7 @@ mod tests {
             std::env::var("USERPROFILE").unwrap()
         };
 
-        return PathBuf::from(home_dir).join(format!("crab_gnupg_test/gnupg_test_{}/test_home", name)).to_string_lossy().to_string();
+        return PathBuf::from(home_dir).join(format!("gnupg_test_{}/test_home", name)).to_string_lossy().to_string();
     }
     
     fn get_output_dir(name:&str) -> String {
@@ -52,7 +52,7 @@ mod tests {
             std::env::var("USERPROFILE").unwrap()
         };
 
-        return PathBuf::from(home_dir).join(format!("crab_gnupg_test/gnupg_test_{}/test_output", name)).to_string_lossy().to_string();
+        return PathBuf::from(home_dir).join(format!("gnupg_test_{}/test_output", name)).to_string_lossy().to_string();
     }
 
     fn generate_random_string() -> String {
@@ -137,7 +137,7 @@ mod tests {
         } else {
             std::env::var("USERPROFILE").unwrap()
         };
-        let test_dir = PathBuf::from(home_dir).join(format!("crab_gnupg_test/gnupg_test_{}", name)).to_string_lossy().to_string();
+        let test_dir = PathBuf::from(home_dir).join(format!("gnupg_test_{}", name)).to_string_lossy().to_string();
     
         // Perform cleanup here
         if let Err(e) = remove_dir_all(test_dir) {
@@ -373,7 +373,30 @@ mod tests {
 
     #[test]
     fn test_revoke_key(){
-        // test revoking a key
+        // test revoking a master key and all its subkeys
+        let name:String  = generate_random_string();
+        let name: &str = name.as_str();
+
+        let gpg: GPG = get_gpg_init(name);
+        let result: Result<CmdResult, GPGError> = gpg.gen_key(None, None);
+        assert_eq!(result.unwrap().is_success(), true);
+
+        let result:Result<Vec<ListKeyResult>, GPGError>  = gpg.list_keys(false, None, false);
+        let keyid:String = result.unwrap()[0].keyid.clone();
+
+        let result: Result<CmdResult, GPGError> = gpg.revoke_key(keyid,None,3, None, false);
+        assert_eq!(result.unwrap().is_success(), true);
+
+        let result:Result<Vec<ListKeyResult>, GPGError>  = gpg.list_keys(false, None, false);
+        let key_list = result.unwrap();
+        assert_eq!(key_list[0].validity, "r");
+
+        cleanup_after_tests(name);
+    }
+
+    #[test]
+    fn test_revoke_key_passphrase_protected(){
+        // test revoking a master key and all its subkeys
         let name:String  = generate_random_string();
         let name: &str = name.as_str();
 
@@ -384,15 +407,108 @@ mod tests {
         let result:Result<Vec<ListKeyResult>, GPGError>  = gpg.list_keys(false, None, false);
         let keyid:String = result.unwrap()[0].keyid.clone();
 
-        let result: Result<CmdResult, GPGError> = gpg.revoke_key(keyid,Some(get_key_passphrass()),3, None);
+        let result: Result<CmdResult, GPGError> = gpg.revoke_key(keyid,Some(get_key_passphrass()),3, None, false);
         assert_eq!(result.unwrap().is_success(), true);
 
         let result:Result<Vec<ListKeyResult>, GPGError>  = gpg.list_keys(false, None, false);
         let key_list = result.unwrap();
         assert_eq!(key_list[0].validity, "r");
 
+        cleanup_after_tests(name);
     }
-    
+
+    #[test]
+    fn test_revoke_key_fail(){
+        // test revoking a master key but mark it as subkey
+        let name:String  = generate_random_string();
+        let name: &str = name.as_str();
+
+        let gpg: GPG = get_gpg_init(name);
+        let result: Result<CmdResult, GPGError> = gpg.gen_key(Some(get_key_passphrass()), None);
+        assert_eq!(result.unwrap().is_success(), true);
+
+        let result: Result<CmdResult, GPGError> = gpg.revoke_key("fake-key-id".to_string(),Some(get_key_passphrass()),3, None, false);
+        assert!(matches!(result.unwrap_err().error_type, GPGErrorType::GPGProcessError(_)));
+
+        cleanup_after_tests(name);
+    }
+
+    #[test]
+    fn test_revoke_key_as_subkey_fail(){
+        // test revoking a master key but mark it as subkey
+        let name:String  = generate_random_string();
+        let name: &str = name.as_str();
+
+        let gpg: GPG = get_gpg_init(name);
+        let result: Result<CmdResult, GPGError> = gpg.gen_key(Some(get_key_passphrass()), None);
+        assert_eq!(result.unwrap().is_success(), true);
+
+        let result:Result<Vec<ListKeyResult>, GPGError>  = gpg.list_keys(false, None, false);
+        let keyid:String = result.unwrap()[0].keyid.clone();
+
+        let result: Result<CmdResult, GPGError> = gpg.revoke_key(keyid,Some(get_key_passphrass()),3, None, true);
+        assert!(matches!(result.unwrap_err().error_type, GPGErrorType::KeyNotSubkey(_)));
+
+        cleanup_after_tests(name);
+    }
+
+    #[test]
+    fn test_revoke_key_reason_code_invalid(){
+        // test revoking a key but invalid reason code
+        let name:String  = generate_random_string();
+        let name: &str = name.as_str();
+
+        let gpg: GPG = get_gpg_init(name);
+        let result: Result<CmdResult, GPGError> = gpg.gen_key(Some(get_key_passphrass()), None);
+        assert_eq!(result.unwrap().is_success(), true);
+
+        let result:Result<Vec<ListKeyResult>, GPGError>  = gpg.list_keys(false, None, false);
+        let keyid:String = result.unwrap()[0].keyid.clone();
+
+        let result: Result<CmdResult, GPGError> = gpg.revoke_key(keyid,Some(get_key_passphrass()),4, None, false);
+        assert!(matches!(result.unwrap_err().error_type, GPGErrorType::InvalidReasonCode(_)));
+
+        cleanup_after_tests(name);
+    }
+
+    #[test]
+    fn test_revoke_subkey(){
+        // test revoking only subkey
+        let name:String  = generate_random_string();
+        let name: &str = name.as_str();
+
+        let gpg: GPG = get_gpg_init(name);
+        let _: Result<CmdResult, GPGError> = gpg.gen_key(Some(get_key_passphrass()), None);
+        let result:Result<Vec<ListKeyResult>, GPGError>  = gpg.list_keys(false, None, false);
+        let key_list = result.unwrap();
+        let _ = gpg.add_subkey(key_list[0].fingerprint.clone(), Some(get_key_passphrass()), "rsa".to_string(), "encrypt".to_string(), "-".to_string());
+        let _ = gpg.add_subkey(key_list[0].fingerprint.clone(), Some(get_key_passphrass()), "rsa".to_string(), "encrypt".to_string(), "-".to_string());
+
+        let result:Result<Vec<ListKeyResult>, GPGError>  = gpg.list_keys(false, None, false);
+        let key_list = result.unwrap();
+        let subkey_1_id:String = key_list[0].subkeys[0].keyid.clone();
+        let subkey_2_id:String = key_list[0].subkeys[1].keyid.clone();
+
+        let result: Result<CmdResult, GPGError> = gpg.revoke_key(subkey_1_id,Some(get_key_passphrass()),3, None, true);
+        assert_eq!(result.unwrap().is_success(), true);
+
+        let result:Result<Vec<ListKeyResult>, GPGError>  = gpg.list_keys(false, None, false);
+        let key_list = result.unwrap();
+        assert_eq!(key_list[0].validity, "u");
+        assert_eq!(key_list[0].subkeys[0].validity, "r");
+        assert_eq!(key_list[0].subkeys[1].validity, "u");
+
+        let result: Result<CmdResult, GPGError> = gpg.revoke_key(subkey_2_id,Some(get_key_passphrass()),3, None, true);
+        assert_eq!(result.unwrap().is_success(), true);
+
+        let result:Result<Vec<ListKeyResult>, GPGError>  = gpg.list_keys(false, None, false);
+        let key_list = result.unwrap();
+        assert_eq!(key_list[0].validity, "u");
+        assert_eq!(key_list[0].subkeys[0].validity, "r");
+        assert_eq!(key_list[0].subkeys[1].validity, "r");
+
+        cleanup_after_tests(name);
+    }
     
     #[test]
     fn test_export_public_key(){

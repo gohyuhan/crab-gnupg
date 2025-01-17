@@ -33,6 +33,8 @@ pub enum GPGErrorType {
     WriteFailError(String),
     ReadFailError(String),
     PassphraseError(String),
+    KeyNotSubkey(String),
+    InvalidReasonCode(String),
     FileNotFoundError(String),
     FileNotProvidedError(String),
 }
@@ -54,6 +56,8 @@ impl Display for GPGErrorType {
             GPGErrorType::WriteFailError(err) => write!(f, "[WriteFailError] {}", err),
             GPGErrorType::ReadFailError(err) => write!(f, "[ReadFailError] {}", err),
             GPGErrorType::PassphraseError(err) => write!(f, "[PassphraseError] {}", err),
+            GPGErrorType::KeyNotSubkey(err) => write!(f, "[KeyNotSubkey] {}", err),
+            GPGErrorType::InvalidReasonCode(err) => write!(f, "[InvalidReasonCode] {}", err),
             GPGErrorType::FileNotFoundError(err) => write!(f, "[FileNotFoundError] {}", err),
             GPGErrorType::FileNotProvidedError(err) => write!(f, "[FileNotProvidedError] {}", err),
         }

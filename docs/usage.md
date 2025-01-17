@@ -4,6 +4,7 @@
 - [List keys](#list-keys)
 - [Delete keys](#delete-keys)
 - [Add subkeys](#add-subkeys)
+- [Revoke key](#revoke-key)
 - [Import keys](#import-keys)
 - [Export public keys](#export-public-keys)
 - [Export secret keys](#export-secret-keys)
@@ -106,7 +107,7 @@ To add a subkey to an existing gpg key, you can use the function of `add_subkey(
 | parameter    | type               | description                                                                               |
 |--------------|--------------------|-------------------------------------------------------------------------------------------|
 | fingerprint  | `String`           | Finerprint of the parent key that the subkey will be added to                             |
-| passphrase   | `Option<String>`   | Passphraae of the parent key if it was passphrase protected                               |
+| passphrase   | `Option<String>`   | Passphrase of the parent key if it was passphrase protected                               |
 | algo         | `String`           | Algorithm of the subkey. e.g) "rsa", "dsa" etc                                            |
 | usage        | `String`           | Capabilities of the subkey. e.g) "sign", "encrypt" etc                                    |
 | expire       | `String`           | When the subkey will expire. Provide in ISO-format YYYY-MM-DD or "-" for no expiration    |
@@ -117,6 +118,39 @@ use crab_gnupg::gnupg::GPG;
 
 let gpg:Result<GPG, GPGError> = GPG::init(None, None, true)
 let result:Result<Vec<ListKeyResult>, GPGError> = gpg.add_subkey(vec!["< FINGERPRINT >"], false, false, None);
+```
+
+&nbsp;
+## Revoke key
+To revoke the entire gpg key or one of its subkeys, you can use the function of `revoke_key()` provided by `GPG`.  
+`revoke_key()` takes in 5 parameters in the following sequence.
+| parameter    | type               | description                                                                                                                                                            |
+|--------------|--------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| keyid        | `String`           | The keyid of the key to revoke                                                                                                                                         |
+| passphrase   | `Option<String>`   | Passphrase of the key if it was passphrase protected                                                                                                                   |
+| reason_code  | `u8`               | Reason code for revocation. Choose between 0~3.                                                                                                                        |
+| revoke_desc  | `Option<String>`   | A description for the revocation                                                                                                                                       |
+| is_subkey    | `Option<String>`   | To indicate a revocation of the subkey only. If a subkey keyid is provided but this is not marked as `true`, the revocation of the entire parent key will be performed |
+
+
+> [!NOTE]
+> Description for Reason Code:   
+> 0 = No reason specified  
+> 1 = Key has been compromised  
+> 2 = Key is superseded  
+> 3 = Key is no longer used  
+
+Example:
+```rust
+use crab_gnupg::gnupg::GPG;
+
+let gpg:Result<GPG, GPGError> = GPG::init(None, None, true)
+
+// for entire key revocation
+let result: Result<CmdResult, GPGError> = gpg.revoke_key(" <KEYID> ".to_string(), Some(" <PASSPHRASE> ".to_string()),3, None, false);
+
+// for subkey revocation
+let result: Result<CmdResult, GPGError> = gpg.revoke_key(" <KEYID> ".to_string(), Some(" <PASSPHRASE> ".to_string()),3, None, true);
 ```
 
 &nbsp;
@@ -233,7 +267,7 @@ To encrypt file, you can use the function of `encrypt()` provided by `GPG`.
 `encrypt()` takes in 1 parameters in the following sequence.
 | parameter         | type                   | description                                                                                          |
 |-------------------|------------------------|------------------------------------------------------------------------------------------------------|
-| encryption_option | `EncryptOption`        | a struct to represent GPG encryption option. Refer [EncryptOption](#encryptoption) for more detail  |
+| encryption_option | `EncryptOption`        | a struct to represent GPG encryption option. Refer [EncryptOption](#encryptoption) for more detail   |
 
 Example:
 ```rust
@@ -250,7 +284,7 @@ To decrypt file, you can use the function of `decrypt()` provided by `GPG`.
 `decrypt()` takes in 1 parameters in the following sequence.
 | parameter      | type                   | description                                                                                          |
 |----------------|------------------------|------------------------------------------------------------------------------------------------------|
-| decrypt_option | `DecryptOption`        | a struct to represent GPG decrypt option. Refer [DecryptOption](#decryptoption) for more detail  |
+| decrypt_option | `DecryptOption`        | a struct to represent GPG decrypt option. Refer [DecryptOption](#decryptoption) for more detail      |
 
 Example:
 ```rust
@@ -267,7 +301,7 @@ To sign file, you can use the function of `sign()` provided by `GPG`.
 `sign()` takes in 1 parameters in the following sequence.
 | parameter   | type                | description                                                                              |
 |-------------|---------------------|------------------------------------------------------------------------------------------|
-| sign_option | `SignOption`        | a struct to represent GPG sign option. Refer [SignOption](#signoption) for more detail  |
+| sign_option | `SignOption`        | a struct to represent GPG sign option. Refer [SignOption](#signoption) for more detail   |
 
 Example:
 ```rust

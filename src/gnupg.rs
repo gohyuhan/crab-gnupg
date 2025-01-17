@@ -375,16 +375,42 @@ impl GPG {
         passphrase: Option<String>,
         reason_code:u8,
         revoke_desc: Option<String>,
-        // output: Option<String>
+        is_subkey: bool,
     ) -> Result<CmdResult, GPGError> {
         let mut args:Vec<String> = vec![];
         let mut desc:String = "".to_string();
+
         if revoke_desc.is_some() {
-            desc = revoke_desc.as_ref().unwrap().to_string();
+            desc = revoke_desc.unwrap();
+        }
+
+        if !(0..=3).contains(&reason_code){
+            // 0 = No reason specified
+            // 1 = Key has been compromised
+            // 2 = Key is superseded
+            // 3 = Key is no longer used
+            return Err(GPGError::new(
+                GPGErrorType::InvalidReasonCode("Please choose between 0~3 as a reason code for revoking a key".to_string()),
+                None,
+            ));
+        }
+
+        let mut byte_input:Vec<u8> = format!("revkey\ny\n{}\n{}\ny\nsave\n", reason_code, desc).as_bytes().to_vec();
+
+        if is_subkey {
+            let sequence: Result<u8, GPGError> = self.get_subkey_position(keyid.clone());
+            match sequence {
+                Ok(sequence) => {
+                    let selected_key = format!("key {}", sequence);
+                    byte_input = format!("{}\nrevkey\ny\n{}\n{}\ny\nsave\n", selected_key, reason_code, desc).as_bytes().to_vec();
+                }
+                Err(e) => {
+                    return Err(e);
+                }
+            }
         }
 
         args.append(&mut vec!["--command-fd".to_string(), "0".to_string(), "--edit-key".to_string(), keyid]);
-        let byte_input:Vec<u8> = format!("revkey\ny\n{}\n{}\ny\nsave\n", reason_code, desc).as_bytes().to_vec();
 
         let result = handle_cmd_io(
             Some(args),
@@ -404,6 +430,27 @@ impl GPG {
         return result;
     }
 
+    fn get_subkey_position(
+        &self,
+        keyid: String,
+    ) -> Result<u8, GPGError> {
+        let key_list: Result<Vec<ListKeyResult>, GPGError> = self.list_keys(false, Some(vec![keyid.clone()]), false);
+        match key_list {
+            Ok(key_list) => {
+                if key_list[0].subkeys.len() > 0 {
+                    let position: u8 = key_list[0].subkeys.iter().position(|x| x.keyid == keyid).unwrap() as u8;
+                    return Ok(position+1);
+                }
+                return Err(GPGError::new(
+                    GPGErrorType::KeyNotSubkey("keyid provided is not a subkey".to_string()),
+                    None,
+                ));
+            },
+            Err(e) => {
+                return Err(e);
+            }
+        }
+    }
 
     //*******************************************************
 
