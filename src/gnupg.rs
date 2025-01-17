@@ -323,6 +323,137 @@ impl GPG {
 
     //*******************************************************
 
+    //                   ADD SUBKEY
+
+    //*******************************************************
+    pub fn add_subkey(
+        &self,
+        fingerprint: String,
+        passphrase: Option<String>,
+        algo: String,
+        usage: String,
+        expire: String // ISO format YYYY-MM-DD or "-" for no expiration
+    ) -> Result<CmdResult, GPGError> {
+        if passphrase.is_some() {
+            if !is_passphrase_valid(&mut passphrase.as_ref().unwrap()) {
+                return Err(GPGError::new(
+                    GPGErrorType::PassphraseError("passphrase invalid".to_string()),
+                    None,
+                ));
+            }
+        }
+
+        let args:Vec<String> =vec!["--quick-add-key".to_string(), fingerprint, algo, usage, expire]; 
+
+        let result = handle_cmd_io(
+            Some(args),
+            passphrase,
+            self.version,
+            self.homedir.clone(),
+            self.options.clone(),
+            self.env.clone(),
+            None,
+            None,
+            None,
+            false,
+            false,
+            Operation::AddSubKey,
+        );
+
+        return result;
+
+    }
+
+    //*******************************************************
+
+    //                   REVOKE KEY
+
+    //*******************************************************
+    pub fn revoke_key(
+        &self,
+        keyid: String,
+        passphrase: Option<String>,
+        reason_code:u8,
+        revoke_desc: Option<String>,
+        is_subkey: bool,
+    ) -> Result<CmdResult, GPGError> {
+        let mut args:Vec<String> = vec![];
+        let mut desc:String = "".to_string();
+
+        if revoke_desc.is_some() {
+            desc = revoke_desc.unwrap();
+        }
+
+        if !(0..=3).contains(&reason_code){
+            // 0 = No reason specified
+            // 1 = Key has been compromised
+            // 2 = Key is superseded
+            // 3 = Key is no longer used
+            return Err(GPGError::new(
+                GPGErrorType::InvalidReasonCode("Please choose between 0~3 as a reason code for revoking a key".to_string()),
+                None,
+            ));
+        }
+
+        let mut byte_input:Vec<u8> = format!("revkey\ny\n{}\n{}\ny\nsave\n", reason_code, desc).as_bytes().to_vec();
+
+        if is_subkey {
+            let sequence: Result<u8, GPGError> = self.get_subkey_position(keyid.clone());
+            match sequence {
+                Ok(sequence) => {
+                    let selected_key = format!("key {}", sequence);
+                    byte_input = format!("{}\nrevkey\ny\n{}\n{}\ny\nsave\n", selected_key, reason_code, desc).as_bytes().to_vec();
+                }
+                Err(e) => {
+                    return Err(e);
+                }
+            }
+        }
+
+        args.append(&mut vec!["--command-fd".to_string(), "0".to_string(), "--edit-key".to_string(), keyid]);
+
+        let result = handle_cmd_io(
+            Some(args),
+            passphrase,
+            self.version,
+            self.homedir.clone(),
+            self.options.clone(),
+            self.env.clone(),
+            None,
+            None,
+            Some(byte_input),
+            true,
+            false,
+            Operation::RevokeKey,
+        );
+
+        return result;
+    }
+
+    fn get_subkey_position(
+        &self,
+        keyid: String,
+    ) -> Result<u8, GPGError> {
+        let key_list: Result<Vec<ListKeyResult>, GPGError> = self.list_keys(false, Some(vec![keyid.clone()]), false);
+        match key_list {
+            Ok(key_list) => {
+                if key_list[0].subkeys.len() > 0 {
+                    let position: u8 = key_list[0].subkeys.iter().position(|x| x.keyid == keyid).unwrap() as u8;
+                    return Ok(position+1);
+                }
+                return Err(GPGError::new(
+                    GPGErrorType::KeyNotSubkey("keyid provided is not a subkey".to_string()),
+                    None,
+                ));
+            },
+            Err(e) => {
+                return Err(e);
+            }
+        }
+    }
+
+    //*******************************************************
+
     //                   IMPORT KEY
 
     //*******************************************************

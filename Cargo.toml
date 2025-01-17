@@ -1,12 +1,12 @@
 [package]
 name = "crab-gnupg"
-version = "0.1.2"
+version = "0.1.3"
 edition = "2021"
 authors = ["Goh Yu Han <gohyuhan123456@gmail.com>"]
 
 description = "API for GNU Privacy Guard (GnuPG) written in rust. Manage gpg keys and secure files using rust."
 license = "MIT"
-repository = "https://github.com/hangoh/crab-gnupg"
+repository = "https://github.com/gohyuhan/crab-gnupg"
 
 [dependencies]
 chrono = "0.4.38"

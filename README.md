@@ -9,7 +9,7 @@ It was design to make it easier to interact with gnupg command line tool for pro
 ![Rust Version](https://img.shields.io/badge/rust-1.82.0-blue)
 
 
-## Table of Contents (Optional)
+## Table of Contents
 1. [Description](#description)
 2. [Installation](#installation)
 3. [Usage](#usage)
