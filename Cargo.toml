@@ -15,7 +15,7 @@ hostname = "0.4.0"
 regex = "1.11.1"
 
 [dev-dependencies]
-rand = "0.8.5"
+rand = "0.9.3"
 tempfile = "3.14.0"
 
 [features]
